@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>SIGS Campus AR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            /* 配色方案 - 高级灰调 */
+            --background-primary: #000000;
+            --background-secondary: #1c1c1e;
+            --background-tertiary: #2c2c2e;
+            --background-elevated: #3a3a3c;
+
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-tertiary: rgba(255, 255, 255, 0.5);
+
+            --accent-blue: #0a84ff;
+            --accent-purple: #bf5af2;
+            --accent-pink: #ff375f;
+            --accent-orange: #ff9f0a;
+            --accent-green: #30d158;
+
+            --border-light: rgba(255, 255, 255, 0.1);
+            --border-medium: rgba(255, 255, 255, 0.15);
+
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+        }
+
+        html, body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--background-primary);
+            min-height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* 背景纹理 */
+        .bg-texture {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%),
+                radial-gradient(ellipse at top, rgba(10, 132, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(191, 90, 242, 0.05) 0%, transparent 50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* 顶部导航栏 */
+        .top-bar {
+            background: rgba(28, 28, 30, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 0.5px solid var(--border-light);
+            padding: env(safe-area-inset-top, 12px) 20px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo-title {
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            color: var(--text-primary);
+        }
+
+        .logo-subtitle {
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--text-tertiary);
+            letter-spacing: 0.2px;
+            margin-top: 1px;
+        }
+
+        .user-stats {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .stat-value {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.4px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 1px;
+        }
+
+        /* 进度指示器 */
+        .progress-indicator {
+            position: fixed;
+            top: 68px;
+            left: 20px;
+            right: 20px;
+            z-index: 90;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: var(--background-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-blue);
+            border-radius: 2px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* 地图容器 */
+        .map-container {
+            margin-top: 110px;
+            height: calc(100vh - 110px - 70px);
+            position: relative;
+            z-index: 10;
+        }
+
+        .campus-map {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: var(--background-secondary);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            overflow: hidden;
+        }
+
+        /* 地图网格 */
+        .map-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(var(--border-light) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-light) 1px, transparent 1px);
+            background-size: 40px 40px;
+            opacity: 0.3;
+        }
+
+        /* 建筑物 */
+        .building {
+            position: absolute;
+            background: var(--background-elevated);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 10px;
+            font-weight: 500;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .building::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .building:hover::before {
+            opacity: 1;
+        }
+
+        /* 道路 */
+        .road {
+            position: absolute;
+            background: var(--background-tertiary);
+            border: 1px solid var(--border-light);
+        }
+
+        .road-main {
+            width: 14px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .road-cross {
+            width: 100%;
+            height: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* 用户位置 */
+        .user-location {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-blue);
+            border: 3px solid var(--background-primary);
+            border-radius: 50%;
+            box-shadow:
+                0 0 0 4px rgba(10, 132, 255, 0.2),
+                0 4px 12px rgba(10, 132, 255, 0.4);
+            z-index: 20;
+            transition: all 0.3s;
+        }
+
+        .user-location::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        /* 宝藏标记 */
+        .treasure-marker {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            background: var(--background-elevated);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            cursor: pointer;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 15;
+            border: 1.5px solid var(--border-light);
+        }
+
+        .treasure-marker::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.3s;
+        }
+
+        .treasure-marker:hover {
+            transform: scale(1.08);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .treasure-marker:hover::after {
+            opacity: 0.3;
+        }
+
+        .treasure-marker.collected {
+            opacity: 0.3;
+            filter: grayscale(1);
+        }
+
+        .treasure-marker.collected:hover {
+            transform: none;
+        }
+
+        /* 收藏按钮 */
+        .collection-btn {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 52px;
+            height: 52px;
+            background: var(--accent-blue);
+            border-radius: var(--radius-xl);
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            box-shadow: var(--shadow-md);
+            z-index: 60;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .collection-btn:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .collection-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(28, 28, 30, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-top: 0.5px solid var(--border-light);
+            padding: 8px calc(env(safe-area-inset-bottom, 8px) + 8px) 8px;
+            display: flex;
+            justify-content: space-around;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 16px;
+            color: var(--text-tertiary);
+            text-decoration: none;
+            font-size: 10px;
+            font-weight: 500;
+            transition: all 0.3s;
+            border-radius: var(--radius-md);
+            min-width: 60px;
+        }
+
+        .nav-item .icon {
+            font-size: 22px;
+            transition: transform 0.3s;
+        }
+
+        .nav-item.active {
+            color: var(--accent-blue);
+        }
+
+        .nav-item.active .icon {
+            transform: scale(1.1);
+        }
+
+        /* 弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--background-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            max-width: 380px;
+            width: 100%;
+            max-height: 80vh;
+            overflow: hidden;
+            transform: scale(0.95) translateY(20px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+
+        .modal-header {
+            padding: 20px;
+            background: var(--background-tertiary);
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .modal-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--background-elevated);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .modal-info {
+            flex: 1;
+        }
+
+        .modal-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+
+        .modal-rarity {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            background: var(--background-elevated);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .modal-close:hover {
+            background: var(--background-primary);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .description {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--background-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-card-label {
+            font-size: 10px;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .stat-card-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .action-button {
+            width: 100%;
+            padding: 16px;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .action-button:hover {
+            background: #0070e0;
+            transform: scale(1.02);
+        }
+
+        .action-button:active {
+            transform: scale(0.98);
+        }
+
+        .action-button:disabled {
+            background: var(--background-elevated);
+            color: var(--text-tertiary);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 收集图库 */
+        .collection-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 20px;
+        }
+
+        .collection-item {
+            aspect-ratio: 1;
+            background: var(--background-tertiary);
+            border: 1.5px solid var(--border-light);
+            border-radius: var(--radius-md);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .collection-item.locked {
+            opacity: 0.4;
+        }
+
+        .collection-item:not(.locked):hover {
+            transform: translateY(-2px);
+            border-color: var(--border-medium);
+            box-shadow: var(--shadow-md);
+        }
+
+        .collection-icon {
+            font-size: 32px;
+        }
+
+        .collection-name {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* 加载动画 */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--background-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: opacity 0.5s;
+        }
+
+        .loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0;
+            animation: fade-in 0.6s ease-out forwards;
+        }
+
+        .loading-text {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 30px;
+            opacity: 0;
+            animation: fade-in 0.6s ease-out 0.2s forwards;
+        }
+
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--border-medium);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 成功提示 */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--background-elevated);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 14px 24px;
+            box-shadow: var(--shadow-lg);
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .toast.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast-icon {
+            font-size: 20px;
+        }
+
+        .toast-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        /* 成功动画 */
+        .success-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .success-icon {
+            font-size: 80px;
+            animation: success-pop 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .success-points {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent-green);
+            margin-top: 16px;
+            opacity: 0;
+            animation: fade-in 0.4s ease-out 0.2s forwards;
+        }
+
+        @keyframes success-pop {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* 稀有度颜色 */
+        .rarity-common { color: var(--text-secondary); }
+        .rarity-rare { color: var(--accent-blue); }
+        .rarity-epic { color: var(--accent-purple); }
+        .rarity-legendary { color: var(--accent-orange); }
+
+        .border-rarity-common { border-color: var(--border-light); }
+        .border-rarity-rare { border-color: var(--accent-blue); }
+        .border-rarity-epic { border-color: var(--accent-purple); }
+        .border-rarity-legendary { border-color: var(--accent-orange); }
+
+        /* 滚动条 */
+        .modal-content::-webkit-scrollbar {
+            width: 1px;
+        }
+
+        /* AI按钮 */
+        .ai-button {
+            position: fixed;
+            bottom: 80px;
+            left: 20px;
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+            border-radius: var(--radius-xl);
+            border: none;
+            cursor: pointer;
+            box-shadow: var(--shadow-md);
+            z-index: 60;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ai-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(191, 90, 242, 0.5);
+        }
+
+        .ai-button:active {
+            transform: scale(0.97);
+        }
+
+        .ai-icon {
+            font-size: 24px;
+        }
+
+        /* AI改造弹窗 */
+        .ai-modal-content {
+            max-width: 500px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent-purple);
+            background: rgba(191, 90, 242, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--accent-purple);
+            background: rgba(191, 90, 242, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .upload-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--background-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            resize: none;
+            transition: all 0.2s;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+        }
+
+        .text-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .style-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .style-option {
+            background: var(--background-tertiary);
+            border: 1.5px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 12px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .style-option:hover {
+            border-color: var(--border-medium);
+        }
+
+        .style-option.selected {
+            border-color: var(--accent-purple);
+            background: rgba(191, 90, 242, 0.1);
+        }
+
+        .style-option-icon {
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+
+        .style-option-name {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .preview-area {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .preview-area.show {
+            display: block;
+        }
+
+        .preview-container {
+            position: relative;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            aspect-ratio: 4/3;
+            background: var(--background-tertiary);
+        }
+
+        .preview-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-tertiary);
+            font-size: 14px;
+        }
+
+        /* 提案列表 */
+        .proposal-list {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .proposal-card {
+            background: var(--background-tertiary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .proposal-card:hover {
+            border-color: var(--border-medium);
+        }
+
+        .proposal-images {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            aspect-ratio: 16/9;
+        }
+
+        .proposal-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .proposal-image.before {
+            position: relative;
+        }
+
+        .proposal-image.before::after {
+            content: 'Before';
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .proposal-image.after {
+            position: relative;
+        }
+
+        .proposal-image.after::after {
+            content: 'After';
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: var(--accent-purple);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .proposal-info {
+            padding: 16px;
+        }
+
+        .proposal-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .proposal-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .proposal-stats {
+            display: flex;
+            gap: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .proposal-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .proposal-stat-icon {
+            font-size: 16px;
+        }
+
+        .vote-button {
+            margin-left: auto;
+            padding: 8px 16px;
+            background: var(--background-elevated);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .vote-button:hover {
+            background: var(--background-primary);
+        }
+
+        .vote-button.voted {
+            background: var(--accent-purple);
+            border-color: var(--accent-purple);
+            color: white;
+        }
+
+        /* 加载状态 */
+        .loading-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--border-medium);
+            border-top-color: var(--accent-purple);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        .loading-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景纹理 -->
+    <div class="bg-texture"></div>
+
+    <!-- 加载动画 -->
+    <div class="loading" id="loading">
+        <div class="loading-logo">🏛️</div>
+        <div class="loading-text">SIGS Campus AR</div>
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- 顶部导航栏 -->
+    <div class="top-bar">
+        <div class="logo">
+            <div class="logo-title">SIGS Campus</div>
+            <div class="logo-subtitle">AR Exploration</div>
+        </div>
+        <div class="user-stats">
+            <div class="stat-item">
+                <div class="stat-value" id="level">1</div>
+                <div class="stat-label">Level</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="points">0</div>
+                <div class="stat-label">Points</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 进度指示器 -->
+    <div class="progress-indicator">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+        </div>
+        <div class="progress-text">
+            <span>Collection Progress</span>
+            <span><span id="collected-count">0</span> / <span id="total-count">8</span></span>
+        </div>
+    </div>
+
+    <!-- 地图容器 -->
+    <div class="map-container">
+        <div class="campus-map" id="campus-map">
+            <div class="map-grid"></div>
+
+            <!-- 道路 -->
+            <div class="road road-main"></div>
+            <div class="road road-cross"></div>
+
+            <!-- 建筑物 -->
+            <div class="building" style="left: 8%; top: 12%; width: 70px; height: 55px;">Information</div>
+            <div class="building" style="right: 8%; top: 12%; width: 80px; height: 65px;">Library</div>
+            <div class="building" style="left: 8%; bottom: 12%; width: 65px; height: 85px;">Dorm C</div>
+            <div class="building" style="right: 8%; bottom: 12%; width: 75px; height: 65px;">Canteen</div>
+            <div class="building" style="left: 35%; top: 6%; width: 60px; height: 45px;">Lab A</div>
+            <div class="building" style="right: 25%; bottom: 6%; width: 65px; height: 50px;">Lab B</div>
+
+            <!-- 用户位置 -->
+            <div class="user-location" style="left: 50%; top: 50%; transform: translate(-50%, -50%);"></div>
+
+            <!-- 宝藏标记将通过JS动态生成 -->
+        </div>
+    </div>
+
+    <!-- AI改造按钮 -->
+    <button class="ai-button" onclick="showAIModal()">
+        <span class="ai-icon">✨</span>
+    </button>
+
+    <!-- 收藏按钮 -->
+    <button class="collection-btn" onclick="showCollection()">□</button>
+
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+        <a href="#" class="nav-item active">
+            <span class="icon">◉</span>
+            <span>Explore</span>
+        </a>
+        <a href="#" class="nav-item" onclick="showProposals()">
+            <span class="icon">🎨</span>
+            <span>Design</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="icon">📊</span>
+            <span>Rank</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="icon">👤</span>
+            <span>Profile</span>
+        </a>
+    </div>
+
+    <!-- 宝藏详情弹窗 -->
+    <div class="modal-overlay" id="treasure-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-icon" id="modal-icon">💎</div>
+                <div class="modal-info">
+                    <div class="modal-title" id="modal-title">Treasure Name</div>
+                    <div class="modal-rarity" id="modal-rarity">Rarity</div>
+                </div>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p class="description" id="modal-description">Description</p>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-label">Location</div>
+                        <div class="stat-card-value" id="modal-location">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-label">Points</div>
+                        <div class="stat-card-value" id="modal-points">+0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-label">Status</div>
+                        <div class="stat-card-value" id="modal-status">Available</div>
+                    </div>
+                </div>
+
+                <button class="action-button" id="collect-btn" onclick="collectTreasure()">
+                    Collect
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 收集图库弹窗 -->
+    <div class="modal-overlay" id="collection-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-icon">📚</div>
+                <div class="modal-info">
+                    <div class="modal-title">Collection</div>
+                    <div class="modal-rarity">Your treasures</div>
+                </div>
+                <button class="modal-close" onclick="closeCollection()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="collection-grid" id="collection-grid">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成功提示 -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <span class="toast-icon" id="toast-icon">✓</span>
+            <span class="toast-text" id="toast-text">Collected!</span>
+        </div>
+    </div>
+
+    <!-- AI改造弹窗 -->
+    <div class="modal-overlay" id="ai-modal">
+        <div class="modal-content ai-modal-content">
+            <div class="modal-header">
+                <div class="modal-icon">✨</div>
+                <div class="modal-info">
+                    <div class="modal-title">AI Campus Redesign</div>
+                    <div class="modal-rarity">Transform your campus</div>
+                </div>
+                <button class="modal-close" onclick="closeAIModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- 上传区域 -->
+                <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+                    <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">Upload campus photo</div>
+                    <div class="upload-hint">or drag and drop</div>
+                </div>
+
+                <!-- 预览区域 -->
+                <div class="preview-area" id="preview-area">
+                    <div class="preview-container">
+                        <img id="preview-image" class="preview-image" style="display: none;">
+                        <div id="preview-placeholder" class="preview-placeholder">No image selected</div>
+                    </div>
+                </div>
+
+                <!-- 改造想法 -->
+                <div class="input-group">
+                    <div class="input-label">Your vision</div>
+                    <textarea class="text-input" id="ai-prompt" rows="3" placeholder="Describe how you want to redesign this area..."></textarea>
+                </div>
+
+                <!-- 风格选择 -->
+                <div class="input-label">Design style</div>
+                <div class="style-options">
+                    <div class="style-option" onclick="selectStyle(this, 'modern')">
+                        <div class="style-option-icon">🏢</div>
+                        <div class="style-option-name">Modern</div>
+                    </div>
+                    <div class="style-option" onclick="selectStyle(this, 'eco')">
+                        <div class="style-option-icon">🌿</div>
+                        <div class="style-option-name">Eco</div>
+                    </div>
+                    <div class="style-option" onclick="selectStyle(this, 'artistic')">
+                        <div class="style-option-icon">🎨</div>
+                        <div class="style-option-name">Artistic</div>
+                    </div>
+                </div>
+
+                <!-- 生成按钮 -->
+                <button class="action-button" id="generate-btn" onclick="generateAIDesign()" disabled>
+                    Generate Design
+                </button>
+
+                <!-- AI结果 -->
+                <div id="ai-result" style="display: none; margin-top: 20px;">
+                    <div class="input-label">AI Generated Design</div>
+                    <div class="preview-container" style="margin-top: 12px;">
+                        <img id="ai-result-image" class="preview-image">
+                    </div>
+                    <div style="display: flex; gap: 12px; margin-top: 16px;">
+                        <button class="action-button" style="flex: 1;" onclick="saveProposal()">
+                            Save Proposal
+                        </button>
+                        <button class="action-button" style="flex: 1; background: var(--background-elevated);" onclick="resetAI()">
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提案列表弹窗 -->
+    <div class="modal-overlay" id="proposals-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-icon">🎨</div>
+                <div class="modal-info">
+                    <div class="modal-title">Design Proposals</div>
+                    <div class="modal-rarity">Community ideas</div>
+                </div>
+                <button class="modal-close" onclick="closeProposals()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="proposal-list" id="proposal-list">
+                    <!-- 示例提案 -->
+                    <div class="proposal-card">
+                        <div class="proposal-images">
+                            <img src="https://picsum.photos/400/300?random=1" class="proposal-image before" alt="Before">
+                            <img src="https://picsum.photos/400/300?random=2" class="proposal-image after" alt="After">
+                        </div>
+                        <div class="proposal-info">
+                            <div class="proposal-title">Modern Library Plaza</div>
+                            <div class="proposal-description">Transformed the library entrance with a modern minimalist design, adding seating areas and green spaces for students to relax and study.</div>
+                            <div class="proposal-stats">
+                                <div class="proposal-stat">
+                                    <span class="proposal-stat-icon">👤</span>
+                                    <span>@designer1</span>
+                                </div>
+                                <div class="proposal-stat">
+                                    <span class="proposal-stat-icon">❤️</span>
+                                    <span id="votes-1">124</span>
+                                </div>
+                                <button class="vote-button" onclick="vote(1, this)">Vote</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="proposal-card">
+                        <div class="proposal-images">
+                            <img src="https://picsum.photos/400/300?random=3" class="proposal-image before" alt="Before">
+                            <img src="https://picsum.photos/400/300?random=4" class="proposal-image after" alt="After">
+                        </div>
+                        <div class="proposal-info">
+                            <div class="proposal-title">Eco Garden Path</div>
+                            <div class="proposal-description">Created an eco-friendly pathway through the central garden with native plants, solar lighting, and rainwater collection systems.</div>
+                            <div class="proposal-stats">
+                                <div class="proposal-stat">
+                                    <span class="proposal-stat-icon">👤</span>
+                                    <span>@green2</span>
+                                </div>
+                                <div class="proposal-stat">
+                                    <span class="proposal-stat-icon">❤️</span>
+                                    <span id="votes-2">89</span>
+                                </div>
+                                <button class="vote-button" onclick="vote(2, this)">Vote</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="proposal-card">
+                        <div class="proposal-images">
+                            <img src="https://picsum.photos/400/300?random=5" class="proposal-image before" alt="Before">
+                            <img src="https://picsum.photos/400/300?random=6" class="proposal-image after" alt="After">
+                        </div>
+                        <div class="proposal-info">
+                            <div class="proposal-title">Artistic Dining Area</div>
+                            <div class="proposal-description">Redesigned the canteen entrance with artistic installations, creating a vibrant and welcoming atmosphere for students.</div>
+                            <div class="proposal-stats">
+                                <div class="proposal-stat">
+                                    <span class="proposal-stat-icon">👤</span>
+                                    <span>@artist3</span>
+                                </div>
+                                <div class="proposal-stat">
+                                    <span class="proposal-stat-icon">❤️</span>
+                                    <span id="votes-3">156</span>
+                                </div>
+                                <button class="vote-button" onclick="vote(3, this)">Vote</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 宝藏数据
+        const treasures = [
+            {
+                id: 1,
+                name: "Wisdom Book",
+                icon: "📖",
+                rarity: "common",
+                points: 20,
+                description: "A treasured book from the library, holding infinite knowledge. A symbol of the scholarly spirit at SIGS.",
+                location: "Near Library",
+                x: 78,
+                y: 20
+            },
+            {
+                id: 2,
+                name: "Tech Foundation",
+                icon: "🧱",
+                rarity: "common",
+                points: 20,
+                description: "The cornerstone of the Information Building, symbolizing the solid foundation of technological innovation.",
+                location: "Info Building",
+                x: 12,
+                y: 18
+            },
+            {
+                id: 3,
+                name: "Innovation Spark",
+                icon: "✨",
+                rarity: "rare",
+                points: 50,
+                description: "A spark of inspiration born in the laboratory, illuminating the path of research. The fruit of countless days and nights.",
+                location: "Lab A",
+                x: 40,
+                y: 10
+            },
+            {
+                id: 4,
+                name: "University Seal",
+                icon: "🔖",
+                rarity: "rare",
+                points: 50,
+                description: "The seal of Tsinghua spirit, embodying the motto of self-discipline and social commitment.",
+                location: "Campus Center",
+                x: 50,
+                y: 50
+            },
+            {
+                id: 5,
+                name: "Sakura Spirit",
+                icon: "🌸",
+                rarity: "epic",
+                points: 100,
+                description: "A limited edition spring spirit. Only appears when cherry blossoms are in full bloom, representing beauty and hope.",
+                location: "Garden Corner",
+                x: 25,
+                y: 35
+            },
+            {
+                id: 6,
+                name: "Learning Lion",
+                icon: "🦁",
+                rarity: "epic",
+                points: 100,
+                description: "A special edition of the Tsinghua mascot in focused learning posture, inspiring every student.",
+                location: "Behind Library",
+                x: 82,
+                y: 22
+            },
+            {
+                id: 7,
+                name: "Time Capsule",
+                icon: "⏰",
+                rarity: "legendary",
+                points: 200,
+                description: "A legendary treasure containing precious memories from the founding of SIGS.",
+                location: "Hidden Spot",
+                x: 58,
+                y: 72
+            },
+            {
+                id: 8,
+                name: "Research Core",
+                icon: "💎",
+                rarity: "legendary",
+                points: 200,
+                description: "A legendary gem embodying the efforts of countless researchers, shining with the light of innovation.",
+                location: "Lab B Depths",
+                x: 70,
+                y: 88
+            }
+        ];
+
+        // 用户数据
+        let userData = {
+            points: 0,
+            level: 1,
+            collectedTreasures: []
+        };
+
+        let currentTreasure = null;
+
+        // 初始化
+        function init() {
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('hidden');
+            }, 1200);
+
+            renderTreasures();
+            loadUserData();
+            updateUI();
+        }
+
+        // 渲染宝藏标记
+        function renderTreasures() {
+            const map = document.getElementById('campus-map');
+
+            treasures.forEach(treasure => {
+                const marker = document.createElement('div');
+                marker.className = 'treasure-marker';
+                marker.innerHTML = treasure.icon;
+                marker.style.left = treasure.x + '%';
+                marker.style.top = treasure.y + '%';
+                marker.id = 'treasure-' + treasure.id;
+                marker.onclick = () => showTreasureDetail(treasure);
+
+                map.appendChild(marker);
+            });
+        }
+
+        // 显示宝藏详情
+        function showTreasureDetail(treasure) {
+            currentTreasure = treasure;
+
+            document.getElementById('modal-icon').textContent = treasure.icon;
+            document.getElementById('modal-title').textContent = treasure.name;
+            document.getElementById('modal-rarity').textContent = treasure.rarity;
+            document.getElementById('modal-rarity').className = 'modal-rarity rarity-' + treasure.rarity;
+            document.getElementById('modal-description').textContent = treasure.description;
+            document.getElementById('modal-location').textContent = treasure.location;
+            document.getElementById('modal-points').textContent = '+' + treasure.points;
+
+            const collectBtn = document.getElementById('collect-btn');
+            const statusEl = document.getElementById('modal-status');
+
+            if (userData.collectedTreasures.includes(treasure.id)) {
+                collectBtn.disabled = true;
+                collectBtn.textContent = 'Collected';
+                statusEl.textContent = 'Already Collected';
+                statusEl.style.color = 'var(--text-tertiary)';
+            } else {
+                collectBtn.disabled = false;
+                collectBtn.textContent = 'Collect';
+                statusEl.textContent = 'Available';
+                statusEl.style.color = 'var(--accent-green)';
+            }
+
+            document.getElementById('treasure-modal').classList.add('active');
+        }
+
+        // 收集宝藏
+        function collectTreasure() {
+            if (!currentTreasure) return;
+
+            userData.collectedTreasures.push(currentTreasure.id);
+            userData.points += currentTreasure.points;
+            updateLevel();
+            saveUserData();
+            updateUI();
+            markAsCollected(currentTreasure.id);
+            closeModal();
+            showSuccessAnimation(currentTreasure);
+        }
+
+        // 更新等级
+        function updateLevel() {
+            const thresholds = [0, 100, 300, 600, 1000];
+            for (let i = thresholds.length - 1; i >= 0; i--) {
+                if (userData.points >= thresholds[i]) {
+                    userData.level = i + 1;
+                    break;
+                }
+            }
+        }
+
+        // 标记为已收集
+        function markAsCollected(treasureId) {
+            const marker = document.getElementById('treasure-' + treasureId);
+            if (marker) {
+                marker.classList.add('collected');
+            }
+        }
+
+        // 显示成功动画
+        function showSuccessAnimation(treasure) {
+            const animation = document.createElement('div');
+            animation.className = 'success-animation';
+            animation.innerHTML = `
+                <div class="success-icon">${treasure.icon}</div>
+                <div class="success-points">+${treasure.points}</div>
+            `;
+            document.body.appendChild(animation);
+
+            setTimeout(() => {
+                animation.remove();
+            }, 1500);
+        }
+
+        // 更新UI
+        function updateUI() {
+            document.getElementById('points').textContent = userData.points;
+            document.getElementById('level').textContent = userData.level;
+            document.getElementById('collected-count').textContent = userData.collectedTreasures.length;
+            document.getElementById('total-count').textContent = treasures.length;
+
+            const progress = (userData.collectedTreasures.length / treasures.length) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+        }
+
+        // 保存用户数据
+        function saveUserData() {
+            localStorage.setItem('sigs-ar-minimal', JSON.stringify(userData));
+        }
+
+        // 加载用户数据
+        function loadUserData() {
+            const saved = localStorage.getItem('sigs-ar-minimal');
+            if (saved) {
+                userData = JSON.parse(saved);
+                userData.collectedTreasures.forEach(id => {
+                    markAsCollected(id);
+                });
+            }
+        }
+
+        // 关闭弹窗
+        function closeModal() {
+            document.getElementById('treasure-modal').classList.remove('active');
+            currentTreasure = null;
+        }
+
+        // 显示收集图库
+        function showCollection() {
+            const grid = document.getElementById('collection-grid');
+            grid.innerHTML = '';
+
+            treasures.forEach(treasure => {
+                const collected = userData.collectedTreasures.includes(treasure.id);
+
+                const item = document.createElement('div');
+                item.className = `collection-item ${collected ? '' : 'locked'}`;
+                item.innerHTML = `
+                    <div class="collection-icon">${collected ? treasure.icon : ''}</div>
+                    <div class="collection-name">${collected ? treasure.name : '???'}</div>
+                `;
+
+                grid.appendChild(item);
+            });
+
+            document.getElementById('collection-modal').classList.add('active');
+        }
+
+        // 关闭收集图库
+        function closeCollection() {
+            document.getElementById('collection-modal').classList.remove('active');
+        }
+
+        // 点击遮罩关闭弹窗
+        document.getElementById('treasure-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        document.getElementById('collection-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeCollection();
+        });
+
+        document.getElementById('ai-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeAIModal();
+        });
+
+        document.getElementById('proposals-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeProposals();
+        });
+
+        // 拖拽上传
+        const uploadArea = document.getElementById('upload-area');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleFile(file);
+            }
+        });
+
+        // AI功能相关变量
+        let selectedStyle = null;
+        let uploadedImage = null;
+        let savedProposals = JSON.parse(localStorage.getItem('campus-proposals') || '[]');
+
+        // 显示AI弹窗
+        function showAIModal() {
+            document.getElementById('ai-modal').classList.add('active');
+        }
+
+        // 关闭AI弹窗
+        function closeAIModal() {
+            document.getElementById('ai-modal').classList.remove('active');
+        }
+
+        // 处理文件选择
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        // 处理文件
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadedImage = e.target.result;
+                const previewImg = document.getElementById('preview-image');
+                const placeholder = document.getElementById('preview-placeholder');
+                const previewArea = document.getElementById('preview-area');
+
+                previewImg.src = uploadedImage;
+                previewImg.style.display = 'block';
+                placeholder.style.display = 'none';
+                previewArea.classList.add('show');
+
+                updateGenerateButton();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 选择风格
+        function selectStyle(element, style) {
+            document.querySelectorAll('.style-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            selectedStyle = style;
+            updateGenerateButton();
+        }
+
+        // 更新生成按钮状态
+        function updateGenerateButton() {
+            const btn = document.getElementById('generate-btn');
+            const prompt = document.getElementById('ai-prompt').value.trim();
+            btn.disabled = !(uploadedImage && selectedStyle && prompt);
+        }
+
+        // 监听prompt输入
+        document.getElementById('ai-prompt').addEventListener('input', updateGenerateButton);
+
+        // 生成AI设计
+        async function generateAIDesign() {
+            const btn = document.getElementById('generate-btn');
+            const resultArea = document.getElementById('ai-result');
+            const resultImg = document.getElementById('ai-result-image');
+
+            btn.textContent = 'Generating...';
+            btn.disabled = true;
+
+            // 模拟AI生成
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // 这里使用随机图片模拟AI生成结果
+            // 实际应用中，调用AI API
+            const styleImages = {
+                modern: 'https://picsum.photos/400/300?random=10',
+                eco: 'https://picsum.photos/400/300?random=11',
+                artistic: 'https://picsum.photos/400/300?random=12'
+            };
+
+            resultImg.src = styleImages[selectedStyle];
+            resultArea.style.display = 'block';
+
+            btn.textContent = 'Generate Design';
+            btn.disabled = false;
+
+            showToast('Design generated successfully!', '✨');
+        }
+
+        // 保存提案
+        function saveProposal() {
+            const prompt = document.getElementById('ai-prompt').value;
+            const resultImg = document.getElementById('ai-result-image').src;
+
+            const proposal = {
+                id: Date.now(),
+                user: 'You',
+                beforeImage: uploadedImage,
+                afterImage: resultImg,
+                title: 'My Campus Redesign',
+                description: prompt,
+                style: selectedStyle,
+                votes: 0,
+                createdAt: new Date().toISOString()
+            };
+
+            savedProposals.unshift(proposal);
+            localStorage.setItem('campus-proposals', JSON.stringify(savedProposals));
+
+            showToast('Proposal saved! It will appear in the gallery.', '💾');
+            closeAIModal();
+            resetAI();
+        }
+
+        // 重置AI
+        function resetAI() {
+            uploadedImage = null;
+            selectedStyle = null;
+
+            document.getElementById('preview-image').style.display = 'none';
+            document.getElementById('preview-placeholder').style.display = 'flex';
+            document.getElementById('preview-area').classList.remove('show');
+            document.getElementById('ai-result').style.display = 'none';
+            document.getElementById('ai-prompt').value = '';
+
+            document.querySelectorAll('.style-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+
+            updateGenerateButton();
+        }
+
+        // 显示提案列表
+        function showProposals() {
+            document.getElementById('proposals-modal').classList.add('active');
+            renderProposals();
+        }
+
+        // 关闭提案列表
+        function closeProposals() {
+            document.getElementById('proposals-modal').classList.remove('active');
+        }
+
+        // 渲染提案列表
+        function renderProposals() {
+            const list = document.getElementById('proposal-list');
+            list.innerHTML = '';
+
+            // 合并示例提案和用户提案
+            const allProposals = [...getSampleProposals(), ...savedProposals];
+
+            allProposals.forEach(proposal => {
+                const card = createProposalCard(proposal);
+                list.appendChild(card);
+            });
+        }
+
+        // 获取示例提案
+        function getSampleProposals() {
+            return [
+                {
+                    id: 1,
+                    user: 'designer1',
+                    beforeImage: 'https://picsum.photos/400/300?random=1',
+                    afterImage: 'https://picsum.photos/400/300?random=2',
+                    title: 'Modern Library Plaza',
+                    description: 'Transformed the library entrance with a modern minimalist design, adding seating areas and green spaces.',
+                    votes: 124
+                },
+                {
+                    id: 2,
+                    user: 'green2',
+                    beforeImage: 'https://picsum.photos/400/300?random=3',
+                    afterImage: 'https://picsum.photos/400/300?random=4',
+                    title: 'Eco Garden Path',
+                    description: 'Created an eco-friendly pathway with native plants, solar lighting, and rainwater collection.',
+                    votes: 89
+                },
+                {
+                    id: 3,
+                    user: 'artist3',
+                    beforeImage: 'https://picsum.photos/400/300?random=5',
+                    afterImage: 'https://picsum.photos/400/300?random=6',
+                    title: 'Artistic Dining Area',
+                    description: 'Redesigned the canteen entrance with artistic installations and vibrant atmosphere.',
+                    votes: 156
+                }
+            ];
+        }
+
+        // 创建提案卡片
+        function createProposalCard(proposal) {
+            const card = document.createElement('div');
+            card.className = 'proposal-card';
+            card.innerHTML = `
+                <div class="proposal-images">
+                    <img src="${proposal.beforeImage}" class="proposal-image before" alt="Before">
+                    <img src="${proposal.afterImage}" class="proposal-image after" alt="After">
+                </div>
+                <div class="proposal-info">
+                    <div class="proposal-title">${proposal.title}</div>
+                    <div class="proposal-description">${proposal.description}</div>
+                    <div class="proposal-stats">
+                        <div class="proposal-stat">
+                            <span class="proposal-stat-icon">👤</span>
+                            <span>@${proposal.user}</span>
+                        </div>
+                        <div class="proposal-stat">
+                            <span class="proposal-stat-icon">❤️</span>
+                            <span id="votes-${proposal.id}">${proposal.votes}</span>
+                        </div>
+                        <button class="vote-button" onclick="vote(${proposal.id}, this)">Vote</button>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        // 投票功能
+        function vote(proposalId, button) {
+            // 检查是否已投票
+            const voted = localStorage.getItem(`voted-${proposalId}`);
+            if (voted) {
+                showToast('You already voted for this proposal', '⚠️');
+                return;
+            }
+
+            // 更新投票数
+            const voteEl = document.getElementById(`votes-${proposalId}`);
+            const currentVotes = parseInt(voteEl.textContent);
+            voteEl.textContent = currentVotes + 1;
+
+            // 标记为已投票
+            localStorage.setItem(`voted-${proposalId}`, 'true');
+            button.classList.add('voted');
+            button.textContent = 'Voted';
+
+            // 更新提案数据
+            const proposal = savedProposals.find(p => p.id === proposalId);
+            if (proposal) {
+                proposal.votes++;
+                localStorage.setItem('campus-proposals', JSON.stringify(savedProposals));
+            }
+
+            showToast('Thanks for your vote!', '❤️');
+        }
+
+        // 显示提示
+        function showToast(message, icon = '✓') {
+            const toast = document.getElementById('toast');
+            const toastIcon = document.getElementById('toast-icon');
+            const toastText = document.getElementById('toast-text');
+
+            toastIcon.textContent = icon;
+            toastText.textContent = message;
+
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // 初始化
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>SIGS AR寻宝</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.8);
+            --shadow-lg: 0 8px 32px rgba(31, 38, 135, 0.37);
+        }
+
+        html, body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0a0e27;
+            min-height: 100vh;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 背景动画 */
+        .bg-animated {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(102, 126, 234, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(240, 147, 251, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(118, 75, 162, 0.2) 0%, transparent 50%),
+                linear-gradient(180deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+            z-index: 0;
+        }
+
+        .bg-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                radial-gradient(2px 2px at 20% 30%, white, transparent),
+                radial-gradient(2px 2px at 60% 70%, white, transparent),
+                radial-gradient(1px 1px at 50% 50%, white, transparent),
+                radial-gradient(1px 1px at 80% 10%, white, transparent),
+                radial-gradient(2px 2px at 90% 60%, white, transparent);
+            background-size: 200% 200%;
+            background-position: 0% 0%;
+            opacity: 0.3;
+            animation: twinkle 8s ease-in-out infinite;
+            z-index: 1;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { background-position: 0% 0%; }
+            50% { background-position: 100% 100%; }
+        }
+
+        /* 顶部导航栏 - 玻璃拟态 */
+        .top-bar {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            padding: env(safe-area-inset-top, 12px) 20px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 20px;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+            filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.5));
+        }
+
+        .user-stats {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .stat-badge {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-badge.premium {
+            background: var(--primary-gradient);
+            border: none;
+        }
+
+        /* 地图容器 */
+        .map-container {
+            margin-top: 70px;
+            height: calc(100vh - 70px - 80px);
+            position: relative;
+            z-index: 10;
+        }
+
+        .campus-map {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: linear-gradient(180deg,
+                rgba(135, 206, 235, 0.3) 0%,
+                rgba(124, 186, 61, 0.2) 30%,
+                rgba(124, 186, 61, 0.3) 100%);
+            border-radius: 0 0 30px 30px;
+            overflow: hidden;
+        }
+
+        /* 建筑物 - 升级版 */
+        .building {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 11px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .building:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        /* 道路 - 更精致 */
+        .road {
+            position: absolute;
+            background: linear-gradient(90deg,
+                rgba(85, 85, 85, 0.4) 0%,
+                rgba(85, 85, 85, 0.6) 50%,
+                rgba(85, 85, 85, 0.4) 100%);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .road-main {
+            width: 15px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .road-cross {
+            width: 100%;
+            height: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* 宝藏标记 - 升级版 */
+        .treasure-marker {
+            position: absolute;
+            font-size: 36px;
+            cursor: pointer;
+            animation: float 2s ease-in-out infinite;
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .treasure-marker:hover {
+            transform: scale(1.15);
+            filter: drop-shadow(0 6px 20px rgba(102, 126, 234, 0.6));
+        }
+
+        .treasure-marker.collected {
+            opacity: 0.3;
+            filter: grayscale(100%) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+            animation: none;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* 宝藏光圈 - 更炫酷 */
+        .treasure-ring {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(255, 215, 0, 0.6);
+            border-radius: 50%;
+            animation: pulse 1.5s ease-out infinite;
+            pointer-events: none;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1.8);
+                opacity: 0;
+            }
+        }
+
+        /* 用户位置 - 更精致 */
+        .user-location {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: var(--primary-gradient);
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            box-shadow:
+                0 0 20px rgba(102, 126, 234, 0.6),
+                0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 20;
+            animation: userPulse 2s ease-in-out infinite;
+        }
+
+        .user-location::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        @keyframes userPulse {
+            0%, 100% {
+                box-shadow:
+                    0 0 20px rgba(102, 126, 234, 0.6),
+                    0 4px 12px rgba(0, 0, 0, 0.3);
+            }
+            50% {
+                box-shadow:
+                    0 0 30px rgba(102, 126, 234, 0.8),
+                    0 6px 20px rgba(0, 0, 0, 0.4);
+            }
+        }
+
+        /* 收集进度 - 玻璃拟态 */
+        .progress-bar {
+            position: fixed;
+            top: 75px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            padding: 10px 20px;
+            border-radius: 25px;
+            box-shadow: var(--shadow-lg);
+            z-index: 50;
+            font-size: 13px;
+            color: var(--text-primary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .progress-icon {
+            font-size: 16px;
+        }
+
+        /* 图库按钮 - 渐变 + 发光 */
+        .collection-btn {
+            position: fixed;
+            bottom: 85px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: var(--secondary-gradient);
+            border-radius: 50%;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow:
+                0 8px 24px rgba(240, 147, 251, 0.5),
+                0 0 0 0 rgba(240, 147, 251, 0.7);
+            z-index: 60;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        .collection-btn:active {
+            transform: scale(0.95);
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                box-shadow:
+                    0 8px 24px rgba(240, 147, 251, 0.5),
+                    0 0 0 0 rgba(240, 147, 251, 0.7);
+            }
+            50% {
+                box-shadow:
+                    0 8px 32px rgba(240, 147, 251, 0.7),
+                    0 0 0 10px rgba(240, 147, 251, 0);
+            }
+        }
+
+        /* 底部导航 - 玻璃拟态 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            padding: 12px calc(env(safe-area-inset-bottom, 12px) + 12px) 12px;
+            display: flex;
+            justify-content: space-around;
+            z-index: 100;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-item {
+            text-align: center;
+            padding: 8px 16px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 11px;
+            flex: 1;
+            transition: all 0.3s ease;
+            border-radius: 15px;
+        }
+
+        .nav-item.active {
+            color: var(--text-primary);
+            background: var(--primary-gradient);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-icon {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 2px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        /* 弹窗 - 高级玻璃拟态 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            max-width: 380px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: scale(0.8) translateY(20px);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            padding: 20px 20px 20px 55px;
+            background: var(--primary-gradient);
+            border-radius: 24px 24px 0 0;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></svg>');
+            opacity: 0.3;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        /* 宝藏图片 - 渐变背景 */
+        .treasure-image {
+            width: 100%;
+            height: 160px;
+            background: var(--secondary-gradient);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 70px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(240, 147, 251, 0.3);
+        }
+
+        .treasure-image::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
+        .treasure-title {
+            font-size: 22px;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .treasure-rarity {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .rarity-common {
+            background: rgba(156, 163, 175, 0.2);
+            color: #9ca3af;
+            border: 1px solid rgba(156, 163, 175, 0.3);
+        }
+
+        .rarity-rare {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .rarity-epic {
+            background: rgba(139, 92, 246, 0.2);
+            color: #a78bfa;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .rarity-legendary {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+            animation: legendary-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes legendary-glow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(245, 158, 11, 0.8);
+            }
+        }
+
+        .treasure-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .treasure-stats {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 16px;
+            margin-bottom: 15px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .stat-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .collect-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .collect-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .collect-btn:hover::before {
+            left: 100%;
+        }
+
+        .collect-btn:active {
+            transform: scale(0.98);
+        }
+
+        .collect-btn:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.3);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* 收集图库 */
+        .collection-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 15px;
+        }
+
+        .collection-item {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .collection-item.locked {
+            opacity: 0.4;
+        }
+
+        .collection-item.locked::after {
+            content: '🔒';
+            position: absolute;
+            font-size: 20px;
+            opacity: 0.5;
+        }
+
+        .collection-item:hover:not(.locked) {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .collection-emoji {
+            font-size: 36px;
+            margin-bottom: 6px;
+            filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+        }
+
+        .collection-name {
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .collection-item.common { border-color: rgba(156, 163, 175, 0.3); }
+        .collection-item.rare { border-color: rgba(59, 130, 246, 0.3); }
+        .collection-item.epic { border-color: rgba(139, 92, 246, 0.3); }
+        .collection-item.legendary { border-color: rgba(245, 158, 11, 0.5); }
+
+        /* 成功动画 - 更炫酷 */
+        .success-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            text-align: center;
+        }
+
+        .success-animation .emoji {
+            font-size: 100px;
+            animation: success-pop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8));
+        }
+
+        .success-animation .text {
+            font-size: 32px;
+            font-weight: 900;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            margin-top: 20px;
+            animation: success-slide 0.6s ease-out 0.1s both;
+        }
+
+        @keyframes success-pop {
+            0% {
+                transform: scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2) rotate(0deg);
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes success-slide {
+            0% {
+                transform: translateY(30px) scale(0.8);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* 粒子效果 */
+        .particle {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 2001;
+            filter: blur(1px);
+        }
+
+        /* 加载动画 */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--primary-gradient);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: opacity 0.5s;
+        }
+
+        .loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-logo {
+            font-size: 80px;
+            margin-bottom: 30px;
+            animation: bounce-scale 1.5s ease-in-out infinite;
+            filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.5));
+        }
+
+        @keyframes bounce-scale {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .loading-bar {
+            width: 200px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .loading-bar-fill {
+            height: 100%;
+            background: white;
+            border-radius: 2px;
+            animation: loading-progress 2s ease-in-out infinite;
+        }
+
+        @keyframes loading-progress {
+            0% {
+                width: 0;
+                transform: translateX(-100%);
+            }
+            50% {
+                width: 100%;
+                transform: translateX(0);
+            }
+            100% {
+                width: 0;
+                transform: translateX(100%);
+            }
+        }
+
+        /* 横屏提示 */
+        .rotate-hint {
+            display: none;
+        }
+
+        @media (orientation: landscape) and (max-height: 500px) {
+            .rotate-hint {
+                display: flex !important;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: var(--primary-gradient);
+                color: white;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                text-align: center;
+                padding: 20px;
+            }
+
+            .rotate-hint .icon {
+                font-size: 80px;
+                margin-bottom: 30px;
+                animation: rotate-anim 3s ease-in-out infinite;
+            }
+
+            @keyframes rotate-anim {
+                0%, 100% {
+                    transform: rotate(0deg);
+                }
+                25% {
+                    transform: rotate(-90deg);
+                }
+                75% {
+                    transform: rotate(90deg);
+                }
+            }
+        }
+
+        /* 滚动条美化 */
+        .modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 横屏提示 -->
+    <div class="rotate-hint">
+        <div class="icon">📱</div>
+        <p style="font-size: 24px; font-weight: 700; margin-bottom: 10px;">请将手机竖屏使用</p>
+        <p style="font-size: 16px; opacity: 0.8;">获得最佳体验</p>
+    </div>
+
+    <!-- 动态背景 -->
+    <div class="bg-animated"></div>
+    <div class="bg-particles"></div>
+
+    <!-- 加载动画 -->
+    <div class="loading" id="loading">
+        <div class="loading-logo">🏫</div>
+        <div class="loading-text">SIGS AR寻宝</div>
+        <div class="loading-bar">
+            <div class="loading-bar-fill"></div>
+        </div>
+    </div>
+
+    <!-- 顶部导航栏 -->
+    <div class="top-bar">
+        <div class="logo">
+            <span class="logo-icon">✨</span>
+            <span>SIGS寻宝</span>
+        </div>
+        <div class="user-stats">
+            <div class="stat-badge">
+                <span>Lv.</span>
+                <span class="level-number">1</span>
+            </div>
+            <div class="stat-badge premium">
+                <span>🏆</span>
+                <span class="points-number">0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 收集进度 -->
+    <div class="progress-bar">
+        <span class="progress-icon">🎯</span>
+        <span class="progress-text">已收集 <span class="collected-count">0</span>/<span class="total-count">8</span></span>
+    </div>
+
+    <!-- 地图容器 -->
+    <div class="map-container">
+        <div class="campus-map" id="campus-map">
+            <!-- 道路 -->
+            <div class="road road-main"></div>
+            <div class="road road-cross"></div>
+
+            <!-- 建筑物 -->
+            <div class="building" style="left: 8%; top: 12%; width: 70px; height: 55px; background: rgba(74, 144, 217, 0.3);">信息楼</div>
+            <div class="building" style="right: 8%; top: 12%; width: 80px; height: 65px; background: rgba(80, 200, 120, 0.3);">图书馆</div>
+            <div class="building" style="left: 8%; bottom: 12%; width: 65px; height: 85px; background: rgba(255, 107, 107, 0.3);">C栋</div>
+            <div class="building" style="right: 8%; bottom: 12%; width: 75px; height: 65px; background: rgba(255, 217, 61, 0.3);">食堂</div>
+            <div class="building" style="left: 35%; top: 6%; width: 60px; height: 45px; background: rgba(155, 89, 182, 0.3);">实验A</div>
+            <div class="building" style="right: 25%; bottom: 6%; width: 65px; height: 50px; background: rgba(231, 76, 60, 0.3);">实验B</div>
+
+            <!-- 用户位置 -->
+            <div class="user-location" style="left: 50%; top: 50%; transform: translate(-50%, -50%);"></div>
+
+            <!-- 宝藏标记将通过JS动态生成 -->
+        </div>
+    </div>
+
+    <!-- 收集图库按钮 -->
+    <button class="collection-btn" onclick="showCollection()">📚</button>
+
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+        <a href="#" class="nav-item active" onclick="switchTab('map')">
+            <span class="nav-icon">🗺️</span>
+            <span>探索</span>
+        </a>
+        <a href="#" class="nav-item" onclick="switchTab('ar')">
+            <span class="nav-icon">📷</span>
+            <span>AR</span>
+        </a>
+        <a href="#" class="nav-item" onclick="switchTab('rank')">
+            <span class="nav-icon">🏆</span>
+            <span>排行</span>
+        </a>
+        <a href="#" class="nav-item" onclick="switchTab('profile')">
+            <span class="nav-icon">👤</span>
+            <span>我的</span>
+        </a>
+    </div>
+
+    <!-- 宝藏详情弹窗 -->
+    <div class="modal-overlay" id="treasure-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="modal-close" onclick="closeModal()">✕</button>
+                <h2 id="modal-title" style="font-size: 20px; font-weight: 700; position: relative; z-index: 1;">宝藏名称</h2>
+            </div>
+            <div class="modal-body">
+                <div class="treasure-image" id="modal-image">🎁</div>
+                <div class="treasure-rarity" id="modal-rarity">普通</div>
+                <p class="treasure-description" id="modal-description">宝藏描述</p>
+
+                <div class="treasure-stats">
+                    <div class="stat-row">
+                        <span class="stat-label"><span>📍</span> 位置</span>
+                        <span class="stat-value" id="modal-location">信息大楼附近</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label"><span>💎</span> 积分</span>
+                        <span class="stat-value" id="modal-points">+20</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label"><span>🎯</span> 稀有度</span>
+                        <span class="stat-value" id="modal-rarity-text">★★☆☆☆</span>
+                    </div>
+                </div>
+
+                <button class="collect-btn" id="collect-btn" onclick="collectTreasure()">
+                    ✨ 收集宝藏 ✨
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 收集图库弹窗 -->
+    <div class="modal-overlay" id="collection-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="modal-close" onclick="closeCollection()">✕</button>
+                <h2 style="font-size: 20px; font-weight: 700; position: relative; z-index: 1;">📚 我的收集</h2>
+            </div>
+            <div class="modal-body">
+                <div class="collection-grid" id="collection-grid">
+                    <!-- 收集品将通过JS动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 宝藏数据
+        const treasures = [
+            {
+                id: 1,
+                name: "智慧之书",
+                emoji: "📖",
+                rarity: "common",
+                rarityText: "★★☆☆☆",
+                points: 20,
+                description: "图书馆的镇馆之宝，阅读后能获得无穷智慧。清华SIGS学子求知精神的象征。",
+                location: "图书馆附近",
+                x: 78,
+                y: 20
+            },
+            {
+                id: 2,
+                name: "科技之砖",
+                emoji: "🧱",
+                rarity: "common",
+                rarityText: "★★☆☆☆",
+                points: 20,
+                description: "信息大楼的基石，象征科技创新的坚实根基。承载着学子们的代码梦想。",
+                location: "信息楼旁",
+                x: 12,
+                y: 18
+            },
+            {
+                id: 3,
+                name: "创新火花",
+                emoji: "✨",
+                rarity: "rare",
+                rarityText: "★★★☆☆",
+                points: 50,
+                description: "在实验楼诞生的灵感火花，照亮科研之路。无数个日夜努力的结晶。",
+                location: "实验楼A周边",
+                x: 40,
+                y: 10
+            },
+            {
+                id: 4,
+                name: "清华印章",
+                emoji: "🔖",
+                rarity: "rare",
+                rarityText: "★★★☆☆",
+                points: 50,
+                description: "清华精神的印记，承载着自强不息、厚德载物的校训精神。",
+                location: "校园中心",
+                x: 50,
+                y: 50
+            },
+            {
+                id: 5,
+                name: "樱花精灵",
+                emoji: "🌸",
+                rarity: "epic",
+                rarityText: "★★★★☆",
+                points: 100,
+                description: "春季限定！只在樱花盛开时出现的神秘精灵，代表美好与希望。",
+                location: "花园角落",
+                x: 25,
+                y: 35
+            },
+            {
+                id: 6,
+                name: "学习狮",
+                emoji: "🦁",
+                rarity: "epic",
+                rarityText: "★★★★☆",
+                points: 100,
+                description: "清华吉祥物特别版，专注学习的姿态激励着每一位学子。",
+                location: "图书馆后",
+                x: 82,
+                y: 22
+            },
+            {
+                id: 7,
+                name: "时光胶囊",
+                emoji: "⏰",
+                rarity: "legendary",
+                rarityText: "★★★★★",
+                points: 200,
+                description: "传说中的宝藏，封存着清华SIGS建校以来的珍贵记忆。",
+                location: "隐藏地点",
+                x: 58,
+                y: 72
+            },
+            {
+                id: 8,
+                name: "科研之心",
+                emoji: "💎",
+                rarity: "legendary",
+                rarityText: "★★★★★",
+                points: 200,
+                description: "凝聚了无数科研人员心血的传奇宝石，闪耀着创新的光芒。",
+                location: "实验楼B深处",
+                x: 70,
+                y: 88
+            }
+        ];
+
+        // 用户数据
+        let userData = {
+            points: 0,
+            level: 1,
+            collectedTreasures: []
+        };
+
+        // 当前选中的宝藏
+        let currentTreasure = null;
+
+        // 初始化
+        function init() {
+            // 模拟加载
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('hidden');
+            }, 1500);
+
+            renderTreasures();
+            loadUserData();
+            updateUI();
+        }
+
+        // 渲染宝藏标记
+        function renderTreasures() {
+            const map = document.getElementById('campus-map');
+
+            treasures.forEach(treasure => {
+                const marker = document.createElement('div');
+                marker.className = 'treasure-marker';
+                marker.innerHTML = treasure.emoji;
+                marker.style.left = treasure.x + '%';
+                marker.style.top = treasure.y + '%';
+                marker.id = 'treasure-' + treasure.id;
+                marker.onclick = () => showTreasureDetail(treasure);
+
+                const ring = document.createElement('div');
+                ring.className = 'treasure-ring';
+                ring.style.left = treasure.x + '%';
+                ring.style.top = treasure.y + '%';
+
+                map.appendChild(ring);
+                map.appendChild(marker);
+            });
+        }
+
+        // 显示宝藏详情
+        function showTreasureDetail(treasure) {
+            currentTreasure = treasure;
+
+            document.getElementById('modal-title').textContent = treasure.name;
+            document.getElementById('modal-image').textContent = treasure.emoji;
+            document.getElementById('modal-rarity').textContent = getRarityText(treasure.rarity);
+            document.getElementById('modal-rarity').className = 'treasure-rarity rarity-' + treasure.rarity;
+            document.getElementById('modal-description').textContent = treasure.description;
+            document.getElementById('modal-location').textContent = treasure.location;
+            document.getElementById('modal-points').textContent = '+' + treasure.points;
+            document.getElementById('modal-rarity-text').textContent = treasure.rarityText;
+
+            const collectBtn = document.getElementById('collect-btn');
+            if (userData.collectedTreasures.includes(treasure.id)) {
+                collectBtn.disabled = true;
+                collectBtn.textContent = '✅ 已收集';
+            } else {
+                collectBtn.disabled = false;
+                collectBtn.textContent = '✨ 收集宝藏 ✨';
+            }
+
+            document.getElementById('treasure-modal').classList.add('active');
+        }
+
+        // 获取稀有度文本
+        function getRarityText(rarity) {
+            const rarityMap = {
+                common: '普通',
+                rare: '稀有',
+                epic: '史诗',
+                legendary: '传说'
+            };
+            return rarityMap[rarity] || '普通';
+        }
+
+        // 收集宝藏
+        function collectTreasure() {
+            if (!currentTreasure) return;
+
+            userData.collectedTreasures.push(currentTreasure.id);
+            userData.points += currentTreasure.points;
+            updateLevel();
+            saveUserData();
+            updateUI();
+            markAsCollected(currentTreasure.id);
+            closeModal();
+            showSuccessAnimation(currentTreasure);
+        }
+
+        // 更新等级
+        function updateLevel() {
+            const levelThresholds = [0, 100, 300, 600, 1000];
+            for (let i = levelThresholds.length - 1; i >= 0; i--) {
+                if (userData.points >= levelThresholds[i]) {
+                    userData.level = i + 1;
+                    break;
+                }
+            }
+        }
+
+        // 标记为已收集
+        function markAsCollected(treasureId) {
+            const marker = document.getElementById('treasure-' + treasureId);
+            if (marker) {
+                marker.classList.add('collected');
+            }
+        }
+
+        // 显示成功动画
+        function showSuccessAnimation(treasure) {
+            const animation = document.createElement('div');
+            animation.className = 'success-animation';
+            animation.innerHTML = `
+                <div class="emoji">${treasure.emoji}</div>
+                <div class="text">+${treasure.points}分！</div>
+            `;
+            document.body.appendChild(animation);
+            createParticles();
+
+            setTimeout(() => {
+                animation.remove();
+            }, 2000);
+        }
+
+        // 创建粒子效果
+        function createParticles() {
+            const colors = ['#f093fb', '#f5576c', '#667eea', '#764ba2', '#ffd93d'];
+
+            for (let i = 0; i < 25; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.left = '50%';
+                particle.style.top = '50%';
+                particle.style.boxShadow = `0 0 10px ${particle.style.backgroundColor}`;
+                document.body.appendChild(particle);
+
+                const angle = (Math.PI * 2 * i) / 25;
+                const velocity = 4 + Math.random() * 4;
+                const vx = Math.cos(angle) * velocity;
+                const vy = Math.sin(angle) * velocity;
+
+                let x = 0, y = 0, opacity = 1;
+
+                const animate = () => {
+                    x += vx;
+                    y += vy + 2;
+                    opacity -= 0.02;
+
+                    particle.style.transform = `translate(${x}px, ${y}px)`;
+                    particle.style.opacity = opacity;
+
+                    if (opacity > 0) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        particle.remove();
+                    }
+                };
+
+                requestAnimationFrame(animate);
+            }
+        }
+
+        // 更新UI
+        function updateUI() {
+            document.querySelector('.points-number').textContent = userData.points;
+            document.querySelector('.level-number').textContent = userData.level;
+            document.querySelector('.collected-count').textContent = userData.collectedTreasures.length;
+            document.querySelector('.total-count').textContent = treasures.length;
+        }
+
+        // 保存用户数据
+        function saveUserData() {
+            localStorage.setItem('sigs-ar-premium', JSON.stringify(userData));
+        }
+
+        // 加载用户数据
+        function loadUserData() {
+            const saved = localStorage.getItem('sigs-ar-premium');
+            if (saved) {
+                userData = JSON.parse(saved);
+                userData.collectedTreasures.forEach(id => {
+                    markAsCollected(id);
+                });
+            }
+        }
+
+        // 关闭弹窗
+        function closeModal() {
+            document.getElementById('treasure-modal').classList.remove('active');
+            currentTreasure = null;
+        }
+
+        // 显示收集图库
+        function showCollection() {
+            const grid = document.getElementById('collection-grid');
+            grid.innerHTML = '';
+
+            treasures.forEach(treasure => {
+                const collected = userData.collectedTreasures.includes(treasure.id);
+
+                const item = document.createElement('div');
+                item.className = `collection-item ${treasure.rarity} ${collected ? '' : 'locked'}`;
+                item.innerHTML = `
+                    <div class="collection-emoji">${collected ? treasure.emoji : '❓'}</div>
+                    <div class="collection-name">${collected ? treasure.name : '???'}</div>
+                `;
+
+                grid.appendChild(item);
+            });
+
+            document.getElementById('collection-modal').classList.add('active');
+        }
+
+        // 关闭收集图库
+        function closeCollection() {
+            document.getElementById('collection-modal').classList.remove('active');
+        }
+
+        // 切换底部标签
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            switch(tab) {
+                case 'ar':
+                    showToast('📷 AR功能开发中\n将使用摄像头发现宝藏');
+                    break;
+                case 'rank':
+                    showToast('🏆 排行榜开发中\n即将上线');
+                    break;
+            }
+        }
+
+        // 显示提示
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(10px);
+                color: white;
+                padding: 20px 30px;
+                border-radius: 15px;
+                font-weight: 600;
+                z-index: 3000;
+                white-space: pre-line;
+                text-align: center;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 2000);
+        }
+
+        // 点击遮罩关闭弹窗
+        document.getElementById('treasure-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        document.getElementById('collection-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeCollection();
+        });
+
+        // 防止页面滚动
+        document.body.addEventListener('touchmove', function(e) {
+            if (e.target.closest('.modal-body')) return;
+            e.preventDefault();
+        }, { passive: false });
+
+        // 初始化
+        init();
+    </script>
+</body>
+</html>
