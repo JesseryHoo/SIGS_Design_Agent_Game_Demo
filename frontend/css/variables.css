@@ -1,0 +1,44 @@
+/* variables.css — CSS 设计令牌（全局变量）
+   职责：定义颜色、间距、字体、圆角、阴影、过渡等全局 CSS 变量 */
+
+:root {
+    /* 颜色 */
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #1a1a1a;
+    --bg-card: #222222;
+    --text-primary: #ffffff;
+    --text-secondary: #aaaaaa;
+    --accent-blue: #4a9eff;
+    --accent-green: #4aff9e;
+    --accent-gold: #ffd700;
+    --border-color: #333333;
+
+    /* 间距 */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-2xl: 48px;
+
+    /* 字体大小 */
+    --font-size-sm: 14px;
+    --font-size-md: 16px;
+    --font-size-lg: 20px;
+    --font-size-xl: 28px;
+    --font-size-2xl: 40px;
+
+    /* 圆角 */
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+
+    /* 阴影 */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+
+    /* 过渡 */
+    --transition-fast: 150ms ease;
+    --transition-normal: 300ms ease;
+}

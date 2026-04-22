@@ -1,0 +1,66 @@
+<!-- landing.html — 阶段一：进入与吸引
+     职责：项目首页，展示主标题和引导按钮，点击后创建会话并跳转到场景漫游 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校园共创计划</title>
+    <link rel="stylesheet" href="../css/variables.css">
+    <link rel="stylesheet" href="../css/reset.css">
+    <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet" href="../css/components.css">
+    <link rel="stylesheet" href="../css/loading.css">
+    <style>
+        .hero {
+            text-align: center;
+            padding: var(--space-2xl) 0;
+        }
+        .hero-title {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            margin-bottom: var(--space-md);
+        }
+        .hero-subtitle {
+            font-size: var(--font-size-lg);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-xl);
+        }
+        .hero-info {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            margin-top: var(--space-xl);
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <main class="main-content">
+            <div class="hero">
+                <h1 class="hero-title">这座校园，还可以更好</h1>
+                <p class="hero-subtitle">告诉AI你的想象，它来帮你把它造出来</p>
+                <button class="btn btn-primary" id="btn-start">开始探索 →</button>
+                <p class="hero-info">无需注册 · 无需设计经验 · 3分钟完成</p>
+            </div>
+        </main>
+    </div>
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/state.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/router.js"></script>
+    <script>
+        document.getElementById("btn-start").addEventListener("click", async () => {
+            try {
+                // TODO: 调用 POST /api/v1/sessions 创建会话
+                // const result = await apiPost("/sessions", {});
+                // setState("sessionId", result.data.session_id);
+                navigateTo(PAGES.EXPLORE);
+            } catch (err) {
+                console.error("创建会话失败:", err);
+                navigateTo(PAGES.EXPLORE);
+            }
+        });
+    </script>
+</body>
+</html>

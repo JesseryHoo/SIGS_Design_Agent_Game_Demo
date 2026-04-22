@@ -1,0 +1,153 @@
+<!-- create.html — 阶段三：创意输入
+     职责：提供情绪标签选择、自由文字输入、可选补充信息，提交后触发 Agent 处理 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创意输入</title>
+    <link rel="stylesheet" href="../css/variables.css">
+    <link rel="stylesheet" href="../css/reset.css">
+    <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet" href="../css/components.css">
+    <link rel="stylesheet" href="../css/loading.css">
+    <style>
+        .section-title {
+            font-size: var(--font-size-lg);
+            margin-bottom: var(--space-md);
+        }
+        .emotion-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-xl);
+        }
+        .input-hint {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--space-sm);
+        }
+        .form-textarea {
+            min-height: 150px;
+        }
+        .optional-section {
+            margin-top: var(--space-lg);
+            padding-top: var(--space-lg);
+            border-top: 1px solid var(--border-color);
+        }
+        .optional-toggle {
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: var(--font-size-sm);
+        }
+        .optional-content {
+            display: none;
+            margin-top: var(--space-md);
+        }
+        .optional-content.open {
+            display: block;
+        }
+        .submit-area {
+            text-align: center;
+            margin-top: var(--space-xl);
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <main class="main-content" style="justify-content: flex-start; padding-top: var(--space-xl);">
+            <h2 class="section-title">先说说你的感受（可选）</h2>
+            <div class="emotion-tags" id="emotion-tags"></div>
+
+            <h2 class="section-title">用你最自然的语言说就好</h2>
+            <p class="input-hint">哪怕只有一句话</p>
+            <div class="form-group">
+                <textarea class="form-textarea" id="user-input"
+                    placeholder="这里的长椅太少了，下课想坐下来发发呆"></textarea>
+            </div>
+
+            <div class="optional-section">
+                <span class="optional-toggle" id="toggle-optional">+ 补充更多细节</span>
+                <div class="optional-content" id="optional-content">
+                    <div class="form-group">
+                        <label class="form-label">我希望在这个时间使用</label>
+                        <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
+                            <button class="tag" data-time="早晨">早晨</button>
+                            <button class="tag" data-time="午后">午后</button>
+                            <button class="tag" data-time="傍晚">傍晚</button>
+                            <button class="tag" data-time="夜晚">夜晚</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">我想在这里</label>
+                        <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
+                            <button class="tag" data-usage="独处">独处</button>
+                            <button class="tag" data-usage="和朋友">和朋友</button>
+                            <button class="tag" data-usage="工作">工作</button>
+                            <button class="tag" data-usage="休息">休息</button>
+                            <button class="tag" data-usage="路过">路过</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="submit-area">
+                <button class="btn btn-primary" id="btn-submit">让AI来理解我的想法 →</button>
+            </div>
+        </main>
+    </div>
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/state.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/router.js"></script>
+    <script>
+        // 渲染情绪标签
+        const tagsContainer = document.getElementById("emotion-tags");
+        const selectedEmotions = [];
+
+        EMOTION_TAGS.forEach(tag => {
+            const btn = document.createElement("button");
+            btn.className = "tag";
+            btn.textContent = `${tag.emoji} ${tag.label}`;
+            btn.addEventListener("click", () => {
+                btn.classList.toggle("tag-selected");
+                const idx = selectedEmotions.indexOf(tag.label);
+                if (idx > -1) {
+                    selectedEmotions.splice(idx, 1);
+                } else {
+                    selectedEmotions.push(tag.label);
+                }
+            });
+            tagsContainer.appendChild(btn);
+        });
+
+        // 可选补充区域切换
+        document.getElementById("toggle-optional").addEventListener("click", () => {
+            document.getElementById("optional-content").classList.toggle("open");
+        });
+
+        // 提交创意
+        document.getElementById("btn-submit").addEventListener("click", async () => {
+            const userInput = document.getElementById("user-input").value.trim();
+            if (!userInput) return;
+
+            try {
+                // TODO: 调用 POST /api/v1/designs/input
+                // const result = await apiPost("/designs/input", {
+                //     session_id: getState("sessionId"),
+                //     ...getState("selectedLocation"),
+                //     emotion_tags: selectedEmotions,
+                //     user_input: userInput,
+                // });
+                // setState("designId", result.data.id);
+                setState("emotionTags", selectedEmotions);
+                setState("userInput", userInput);
+                navigateTo(PAGES.CONFIRM);
+            } catch (err) {
+                console.error("提交失败:", err);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!-- gallery.html — 阶段六：社区沉淀
+     职责：展示统计数据、校园地图光点可视化、设计卡片列表、排序切换和详情弹窗 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社区创意</title>
+    <link rel="stylesheet" href="../css/variables.css">
+    <link rel="stylesheet" href="../css/reset.css">
+    <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet" href="../css/components.css">
+    <link rel="stylesheet" href="../css/loading.css">
+    <style>
+        .stats-banner {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-xl);
+            padding: var(--space-lg) 0;
+            margin-bottom: var(--space-xl);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-item .number {
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+        .stat-item .label {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-lg);
+        }
+        .section-header h2 {
+            font-size: var(--font-size-lg);
+        }
+        .sort-toggle {
+            display: flex;
+            gap: var(--space-sm);
+        }
+        .sort-toggle button {
+            padding: var(--space-xs) var(--space-md);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-sm);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+        }
+        .sort-toggle button.active {
+            background: var(--accent-blue);
+            color: var(--bg-primary);
+        }
+        .map-container {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-xl);
+        }
+        .design-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--space-lg);
+            margin-bottom: var(--space-xl);
+        }
+        .design-card .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-sm) var(--space-md);
+        }
+        .design-card .excerpt {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+            padding: 0 var(--space-md) var(--space-sm);
+        }
+        .like-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+        .like-btn:hover {
+            color: #ff4757;
+        }
+        /* Modal */
+        .modal-content {
+            position: relative;
+        }
+        .modal-design-images {
+            margin-bottom: var(--space-lg);
+        }
+        .modal-detail p {
+            margin-bottom: var(--space-sm);
+            color: var(--text-secondary);
+        }
+        .modal-detail .label {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <main class="main-content" style="justify-content: flex-start; padding-top: var(--space-xl);">
+            <h1 style="text-align: center; margin-bottom: var(--space-md);">所有人的校园想象</h1>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--space-xl);">
+                这里的每一个点，都是一个人在这座校园里的感受与期待
+            </p>
+
+            <div class="stats-banner" id="stats-banner">
+                <div class="stat-item">
+                    <div class="number" id="stat-visitors">0</div>
+                    <div class="label">位访客参与</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number" id="stat-designs">0</div>
+                    <div class="label">个创意设计</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number" id="stat-areas">0</div>
+                    <div class="label">个区域覆盖</div>
+                </div>
+            </div>
+
+            <div class="map-container" id="map-container">
+                校园地图光点可视化占位
+            </div>
+
+            <div class="section-header">
+                <h2>创意设计</h2>
+                <div class="sort-toggle">
+                    <button class="active" data-sort="created_at">最新</button>
+                    <button data-sort="likes_count">最受欢迎</button>
+                </div>
+            </div>
+
+            <div class="design-grid" id="design-grid">
+                <!-- TODO: 从 API 加载设计卡片数据 -->
+            </div>
+        </main>
+    </div>
+
+    <!-- 设计详情弹窗 -->
+    <div class="modal-overlay" id="design-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close">&times;</button>
+            <div class="modal-design-images">
+                <div class="comparison-container">
+                    <div class="comparison-item">
+                        <p class="comparison-label">原始场景</p>
+                        <div class="skeleton" style="aspect-ratio: 16/9;"></div>
+                    </div>
+                    <div class="comparison-item">
+                        <p class="comparison-label">设计效果</p>
+                        <div class="skeleton" style="aspect-ratio: 16/9;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-detail">
+                <p><span class="label">用户的想法：</span><span id="modal-input">-</span></p>
+                <p><span class="label">情绪标签：</span><span id="modal-emotions">-</span></p>
+                <p><span class="label">AI 回应：</span><span id="modal-ai-response">-</span></p>
+                <p><span class="label">点赞数：</span><span id="modal-likes">0</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/state.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/router.js"></script>
+    <script>
+        // TODO: 从 API 加载统计数据、地图光点和设计列表
+        // 加载统计: apiGet("/stats")
+        // 加载地图: apiGet("/designs/map")
+        // 加载设计列表: apiGet("/designs")
+
+        // 排序切换
+        document.querySelectorAll(".sort-toggle button").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll(".sort-toggle button").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                // TODO: 按新排序重新加载设计列表
+            });
+        });
+
+        // 弹窗控制
+        document.getElementById("modal-close").addEventListener("click", () => {
+            document.getElementById("design-modal").classList.remove("active");
+        });
+    </script>
+</body>
+</html>

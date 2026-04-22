@@ -1,0 +1,18 @@
+# config.py — 应用配置管理
+# 职责：通过 pydantic-settings 读取 .env 环境变量，提供全局配置单例
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    DATABASE_URL: str = ""
+    DATABASE_NAME: str = ""
+    API_KEY: str = ""
+    API_HOST: str = "0.0.0.0"
+    API_PORT: int = 8989
+    FRONTEND_URL: str = "http://localhost:8989"
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+
+settings = Settings()

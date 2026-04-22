@@ -1,0 +1,117 @@
+<!-- confirm.html — 阶段四：确认设计说明
+     职责：展示 AI 理解的设计方向，用户可确认、修改后触发图生图生成 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>确认设计说明</title>
+    <link rel="stylesheet" href="../css/variables.css">
+    <link rel="stylesheet" href="../css/reset.css">
+    <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet" href="../css/components.css">
+    <link rel="stylesheet" href="../css/loading.css">
+    <style>
+        .confirm-section {
+            margin-bottom: var(--space-xl);
+        }
+        .confirm-label {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-sm);
+        }
+        .user-original {
+            background: var(--bg-secondary);
+            padding: var(--space-md);
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--accent-blue);
+            margin-bottom: var(--space-lg);
+        }
+        .ai-understanding {
+            margin-bottom: var(--space-lg);
+        }
+        .ai-understanding li {
+            margin-bottom: var(--space-xs);
+            color: var(--text-secondary);
+        }
+        .design-description {
+            margin-bottom: var(--space-xl);
+        }
+        .design-description textarea {
+            min-height: 100px;
+        }
+        .actions {
+            display: flex;
+            gap: var(--space-md);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <main class="main-content" style="justify-content: flex-start; padding-top: var(--space-xl);">
+            <h2 style="text-align: center; margin-bottom: var(--space-xl);">
+                这是AI对你想法的理解——看看对不对？
+            </h2>
+
+            <div class="confirm-section">
+                <p class="confirm-label">你说的：</p>
+                <div class="user-original" id="user-original">
+                    加载中...
+                </div>
+            </div>
+
+            <div class="confirm-section ai-understanding">
+                <p class="confirm-label">AI 理解了你的想法：</p>
+                <ul id="ai-points">
+                    <li>加载中...</li>
+                </ul>
+            </div>
+
+            <div class="confirm-section design-description">
+                <p class="confirm-label">准备生成的设计方向（可编辑）：</p>
+                <textarea class="form-textarea" id="design-description"
+                    placeholder="AI 生成的设计说明将显示在这里..."></textarea>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary" id="btn-confirm">就是这个感觉，生成设计 →</button>
+                <button class="btn btn-secondary" id="btn-back">不太对，我想调整一下</button>
+            </div>
+        </main>
+    </div>
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/state.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/router.js"></script>
+    <script>
+        // 显示用户的原始输入
+        const userInput = getState("userInput") || "";
+        document.getElementById("user-original").textContent = userInput || "（暂无输入）";
+
+        // TODO: 从后端获取 AI 理解结果
+        // const result = await apiGet(`/designs/${getState("designId")}`);
+        // 填充 ai-points 和 design-description
+
+        document.getElementById("btn-confirm").addEventListener("click", async () => {
+            try {
+                // TODO: 调用 POST /api/v1/designs/confirm
+                // await apiPost("/designs/confirm", {
+                //     session_id: getState("sessionId"),
+                //     design_id: getState("designId"),
+                //     design_description: document.getElementById("design-description").value,
+                // });
+                navigateTo(PAGES.GENERATE);
+            } catch (err) {
+                console.error("确认失败:", err);
+            }
+        });
+
+        document.getElementById("btn-back").addEventListener("click", () => {
+            navigateTo(PAGES.CREATE);
+        });
+    </script>
+</body>
+</html>
