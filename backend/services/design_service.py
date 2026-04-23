@@ -25,7 +25,7 @@ async def submit_input(db: AsyncSession, request: DesignInputRequest) -> dict:
             "error": "Session not found"
         }
 
-    ai_response = await translate_to_design_spec(
+    agent_result = await translate_to_design_spec(
         emotion_tags=request.emotion_tags,
         user_input=request.user_input,
         location_label=request.location_label
@@ -40,8 +40,8 @@ async def submit_input(db: AsyncSession, request: DesignInputRequest) -> dict:
         emotion_tags=request.emotion_tags,
         user_input=request.user_input,
         original_screenshot=request.original_screenshot,
-        ai_response=ai_response,
-        design_description=ai_response
+        ai_response=agent_result["ai_response"],
+        design_description=agent_result["design_description"]
     )
     db.add(design)
     await db.commit()

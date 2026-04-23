@@ -9,11 +9,11 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-async def translate_to_design_spec(emotion_tags: list[str] | None, user_input: str, location_label: str | None) -> str:
-    """调用 LLM API 将用户创意翻译为专业设计说明"""
+async def translate_to_design_spec(emotion_tags: list[str] | None, user_input: str, location_label: str | None) -> dict:
+    """调用 LLM API 将用户创意翻译为专业设计说明，返回 ai_response 和 design_description"""
     if not settings.LLM_API_KEY or not settings.LLM_API_URL:
         logger.warning("LLM API 配置不完整，返回占位响应")
-        return _generate_fallback_design_spec(emotion_tags, user_input, location_label)
+        return _generate_fallback_result(emotion_tags, user_input, location_label)
 
     prompt = _build_prompt(emotion_tags, user_input, location_label)
 
@@ -51,14 +51,17 @@ async def translate_to_design_spec(emotion_tags: list[str] | None, user_input: s
             design_spec = result.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
 
             logger.info(f"LLM 调用成功，生成设计说明: {design_spec[:50]}...")
-            return design_spec
+            return {
+                "ai_response": design_spec,
+                "design_description": design_spec,
+            }
 
     except httpx.HTTPStatusError as e:
         logger.error(f"LLM API 调用失败: {e.response.status_code} - {e.response.text}")
-        return _generate_fallback_design_spec(emotion_tags, user_input, location_label)
+        return _generate_fallback_result(emotion_tags, user_input, location_label)
     except Exception as e:
         logger.error(f"LLM API 调用异常: {e}")
-        return _generate_fallback_design_spec(emotion_tags, user_input, location_label)
+        return _generate_fallback_result(emotion_tags, user_input, location_label)
 
 
 def _build_prompt(emotion_tags: list[str] | None, user_input: str, location_label: str | None) -> str:
@@ -80,16 +83,24 @@ def _build_prompt(emotion_tags: list[str] | None, user_input: str, location_labe
     return prompt.strip()
 
 
-def _generate_fallback_design_spec(emotion_tags: list[str] | None, user_input: str, location_label: str | None) -> str:
-    """当 LLM API 调用失败时生成占位设计说明"""
+def _generate_fallback_result(emotion_tags: list[str] | None, user_input: str, location_label: str | None) -> dict:
+    """当 LLM API 调用失败时生成占位 ai_response 和 design_description"""
     emotion_desc = ", ".join(emotion_tags) if emotion_tags else "宁静"
 
-    fallback_spec = f"基于{emotion_desc}的氛围和{location_label}的校园位置"
-
+    ai_response = f"感谢你分享了关于{location_label}的想法"
     if user_input:
-        fallback_spec += f"，结合{user_input}的设计理念"
+        ai_response += f"：「{user_input[:50]}」"
+    ai_response += "。我已理解你的需求，正在为你构思设计方案。"
 
-    fallback_spec += "，打造适合学习和交流的校园空间。"
+    design_description = f"基于{emotion_desc}的氛围"
+    if location_label:
+        design_description += f"和{location_label}的校园位置"
+    if user_input:
+        design_description += f"，结合「{user_input[:30]}」的设计理念"
+    design_description += "，打造适合学习和交流的校园空间。"
 
-    logger.warning(f"使用占位设计说明: {fallback_spec}")
-    return fallback_spec
+    logger.warning(f"使用占位响应 — ai_response: {ai_response[:40]}...")
+    return {
+        "ai_response": ai_response,
+        "design_description": design_description,
+    }

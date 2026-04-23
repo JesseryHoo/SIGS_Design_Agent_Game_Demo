@@ -216,7 +216,13 @@
 
             // 如果有生成图片则展示
             if (designData.generated_image && designData.generated_image !== '生成中...') {
-                resultPreview.innerHTML = `<img src="${designData.generated_image}" alt="Generated Design" style="max-width: 100%; border-radius: 12px;">`;
+                const img = document.createElement('img');
+                img.src = designData.generated_image;
+                img.alt = 'Generated Design';
+                img.style.maxWidth = '100%';
+                img.style.borderRadius = '12px';
+                resultPreview.textContent = '';
+                resultPreview.appendChild(img);
             } else {
                 // agent_service 未实现时，显示 AI 文字响应
                 const aiResponse = getState('aiResponse') || '';

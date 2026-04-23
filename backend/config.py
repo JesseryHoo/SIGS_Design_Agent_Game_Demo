@@ -11,12 +11,16 @@ class Settings(BaseSettings):
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
     FRONTEND_URL: str = "http://localhost:3000"
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 30
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE: int = 1800
     LLM_API_KEY: str = ""
     LLM_API_URL: str = ""
-    LLM_MODEL: str = "gpt-4"
+    LLM_MODEL: str = ""
     IMAGE_API_KEY: str = ""
     IMAGE_API_URL: str = ""
-    IMAGE_MODEL: str = "stable-diffusion-xl"
+    IMAGE_MODEL: str = ""
     MODEL3D_API_KEY: str = ""
     MODEL3D_API_URL: str = ""
 

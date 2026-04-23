@@ -34,18 +34,17 @@ async def get_stats(
     )
     total_likes_count = total_likes.scalar()
 
-    result = await db.execute(
-        select(Design).where(
+    areas_result = await db.execute(
+        select(func.count(
+            func.distinct(
+                func.concat(Design.location_x, ',', Design.location_y)
+            )
+        )).where(
             Design.location_x.isnot(None),
             Design.location_y.isnot(None)
         )
     )
-    designs_with_location = result.scalars().all()
-    locations_covered = len(set(
-        (d.location_x, d.location_y)
-        for d in designs_with_location
-        if d.location_x is not None and d.location_y is not None
-    ))
+    locations_covered = areas_result.scalar() or 0
 
     return api_success(data={
         "total_visitors": total_visitors or 0,

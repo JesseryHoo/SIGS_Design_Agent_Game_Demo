@@ -22,12 +22,14 @@ async def submit_creative_input(
     return api_success(data=result)
 
 
-@design_router.post("/designs/confirm")
+@design_router.post("/designs/{design_id}/confirm")
 async def confirm_design(
+    design_id: str,
     request: DesignConfirmRequest,
     db: AsyncSession = Depends(get_db),
 ):
     """确认设计说明 → 触发图生图"""
+    request.design_id = design_id
     result = await design_service.confirm_design(db, request)
     return api_success(data=result)
 
@@ -85,6 +87,8 @@ async def like_design(
     from backend.services import session_service
 
     user = await session_service.get_session(db, session_id)
+    if not user:
+        return api_success(data={"success": False, "message": "会话不存在"}, code=40401)
     result = await like_service.like_design(db, str(user["id"]), design_id)
     return api_success(data=result)
 
@@ -99,5 +103,7 @@ async def unlike_design(
     from backend.services import session_service
 
     user = await session_service.get_session(db, session_id)
+    if not user:
+        return api_success(data={"success": False, "message": "会话不存在"}, code=40401)
     result = await like_service.unlike_design(db, str(user["id"]), design_id)
     return api_success(data=result)

@@ -25,10 +25,10 @@ const API = {
         };
 
         // Add API Key if available (from backend config)
-        // const apiKey = localStorage.getItem('api_key');
-        // if (apiKey) {
-        //     headers['X-API-Key'] = apiKey;
-        // }
+        const apiKey = localStorage.getItem('api_key');
+        if (apiKey) {
+            headers['X-API-Key'] = apiKey;
+        }
 
         try {
             const response = await fetch(url, {
@@ -88,13 +88,15 @@ const API = {
     },
 
     async likeDesign(designId) {
-        return this.request(`${API_CONFIG.endpoints.designs}/${designId}/like`, {
+        const sessionId = getState('sessionId');
+        return this.request(`${API_CONFIG.endpoints.designs}/${designId}/like?session_id=${encodeURIComponent(sessionId)}`, {
             method: 'POST'
         });
     },
 
     async unlikeDesign(designId) {
-        return this.request(`${API_CONFIG.endpoints.designs}/${designId}/like`, {
+        const sessionId = getState('sessionId');
+        return this.request(`${API_CONFIG.endpoints.designs}/${designId}/like?session_id=${encodeURIComponent(sessionId)}`, {
             method: 'DELETE'
         });
     }

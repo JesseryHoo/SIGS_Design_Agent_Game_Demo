@@ -16,7 +16,14 @@ def _get_engine():
     """懒初始化异步引擎和会话工厂，避免无数据库配置时启动报错"""
     global _engine, _async_session_factory
     if _engine is None:
-        _engine = create_async_engine(settings.DATABASE_URL, echo=False, pool_size=5, max_overflow=10)
+        _engine = create_async_engine(
+            settings.DATABASE_URL,
+            echo=False,
+            pool_size=settings.DB_POOL_SIZE,
+            max_overflow=settings.DB_MAX_OVERFLOW,
+            pool_timeout=settings.DB_POOL_TIMEOUT,
+            pool_recycle=settings.DB_POOL_RECYCLE,
+        )
         _async_session_factory = async_sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
     return _engine
 

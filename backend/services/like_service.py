@@ -3,7 +3,7 @@
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database.models import Design, Like
@@ -28,13 +28,11 @@ async def like_design(db: AsyncSession, user_id: str, design_id: str) -> dict:
     like = Like(user_id=user_id, design_id=design_id)
     db.add(like)
 
-    result = await db.execute(
-        select(Design).where(Design.id == uuid.UUID(design_id))
+    await db.execute(
+        update(Design)
+        .where(Design.id == uuid.UUID(design_id))
+        .values(likes_count=Design.likes_count + 1)
     )
-    design = result.scalar_one_or_none()
-
-    if design:
-        design.likes_count += 1
 
     await db.commit()
 
@@ -62,13 +60,10 @@ async def unlike_design(db: AsyncSession, user_id: str, design_id: str) -> dict:
 
     await db.delete(existing_like)
 
-    result = await db.execute(
-        select(Design).where(Design.id == uuid.UUID(design_id))
+    await db.execute(
+        text("UPDATE designs SET likes_count = GREATEST(likes_count - 1, 0) WHERE id = :id"),
+        {"id": uuid.UUID(design_id)}
     )
-    design = result.scalar_one_or_none()
-
-    if design and design.likes_count > 0:
-        design.likes_count -= 1
 
     await db.commit()
 
