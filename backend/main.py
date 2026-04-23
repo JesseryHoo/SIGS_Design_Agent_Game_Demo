@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.api.router import api_router
 from backend.config import settings
+from backend.database.connection import close_db, init_db
 from backend.middleware.auth import APIKeyMiddleware
 from backend.middleware.error_handler import add_error_handlers
 from backend.middleware.logging import LoggingMiddleware
@@ -24,7 +25,13 @@ FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("SIGS 校园共创平台服务启动...")
+    try:
+        await init_db()
+        logger.info("数据库连通性验证通过")
+    except Exception as e:
+        logger.warning("数据库连通性验证失败: %s（服务仍可启动）", e)
     yield
+    await close_db()
     logger.info("服务关闭...")
 
 

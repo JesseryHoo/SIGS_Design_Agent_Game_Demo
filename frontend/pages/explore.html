@@ -211,8 +211,21 @@
                 const label = marker.dataset.label;
                 const mood = marker.dataset.mood;
 
-                APP_STATE.selectedLocation = { location, label, mood };
-                setState('selectedLocation', APP_STATE.selectedLocation);
+                // 从 CSS 定位百分比转换为模拟坐标（后续可替换为真实地理坐标）
+                const top = parseFloat(marker.style.top);
+                const left = parseFloat(marker.style.left);
+
+                const locationData = {
+                    location,
+                    label,
+                    mood,
+                    location_x: left,
+                    location_y: top,
+                    location_z: 0
+                };
+
+                APP_STATE.selectedLocation = locationData;
+                setState('selectedLocation', locationData);
 
                 // Highlight selected marker
                 document.querySelectorAll('.location-marker').forEach(m => m.classList.remove('selected'));
@@ -226,6 +239,23 @@
                 );
             });
         });
+
+        // 确保页面加载时有 session
+        (async () => {
+            let sessionId = getState('sessionId');
+            if (!sessionId) {
+                try {
+                    const res = await API.createSession();
+                    sessionId = res.data.session_id;
+                    setState('sessionId', sessionId);
+                    APP_STATE.sessionId = sessionId;
+                } catch (err) {
+                    console.error('创建会话失败:', err);
+                }
+            } else {
+                APP_STATE.sessionId = sessionId;
+            }
+        })();
     </script>
 </body>
 </html>

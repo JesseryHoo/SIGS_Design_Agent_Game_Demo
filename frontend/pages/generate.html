@@ -152,8 +152,91 @@
             }, 150);
         });
 
-        // Simulate loading and result display
-        async function showLoadingMessages() {
+        // 轮询生成状态，展示真实结果
+        const POLL_INTERVAL = 2000; // 2 秒轮询一次
+        const MAX_POLL_ATTEMPTS = 60; // 最多轮询 60 次（2 分钟）
+        let pollCount = 0;
+
+        async function pollDesignStatus() {
+            const designId = getState('designId');
+            if (!designId) {
+                // 没有 designId，回退到模拟模式
+                showFallbackLoading();
+                return;
+            }
+
+            const loadingMsg = document.getElementById('loadingMessage');
+            const statusMessages = APP_STATE.language === 'zh' ? [
+                'AI正在理解你的想法……',
+                '正在分析这个空间的光线与尺度……',
+                '正在把你的感受转化为空间语言……',
+                '你的校园，正在生长中……'
+            ] : [
+                'AI is understanding your ideas...',
+                'Analyzing the lighting and scale of this space...',
+                'Translating your feelings into spatial language...',
+                'Your campus is growing...'
+            ];
+
+            const poll = async () => {
+                pollCount++;
+                if (pollCount > MAX_POLL_ATTEMPTS) {
+                    loadingMsg.innerHTML = APP_STATE.language === 'zh'
+                        ? '<span lang="zh">生成超时，请稍后查看</span><span lang="en">Generation timed out, please check later</span>';
+                    return;
+                }
+
+                // 更新加载提示文字
+                const msgIndex = Math.min(pollCount - 1, statusMessages.length - 1);
+                loadingMsg.innerHTML = `<span lang="${APP_STATE.language}">${statusMessages[msgIndex]}</span>`;
+
+                try {
+                    const res = await API.getDesignStatus(designId);
+                    const status = res.data.status;
+
+                    if (status === 'completed') {
+                        // 生成完成 — 展示结果
+                        showResult(res.data);
+                        return;
+                    }
+                } catch (err) {
+                    console.error('轮询状态失败:', err);
+                }
+
+                // 继续轮询
+                setTimeout(poll, POLL_INTERVAL);
+            };
+
+            poll();
+        }
+
+        function showResult(designData) {
+            const resultPreview = document.getElementById('resultPreview');
+            const resultText = document.getElementById('resultText');
+
+            // 如果有生成图片则展示
+            if (designData.generated_image && designData.generated_image !== '生成中...') {
+                resultPreview.innerHTML = `<img src="${designData.generated_image}" alt="Generated Design" style="max-width: 100%; border-radius: 12px;">`;
+            } else {
+                // agent_service 未实现时，显示 AI 文字响应
+                const aiResponse = getState('aiResponse') || '';
+                if (aiResponse && aiResponse !== 'AI正在分析您的创意，请稍候...') {
+                    resultText.querySelector('[lang="zh"]').textContent = aiResponse;
+                    resultText.querySelector('[lang="en"]').textContent = aiResponse;
+                }
+            }
+
+            if (designData.design_description) {
+                resultText.querySelector('[lang="zh"]').textContent = designData.design_description;
+                resultText.querySelector('[lang="en"]').textContent = designData.design_description;
+            }
+
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('resultContainer').classList.add('visible');
+        }
+
+        // 无 designId 时的回退模拟模式
+        async function showFallbackLoading() {
             const messages = APP_STATE.language === 'zh' ? [
                 'AI正在理解你的想法……',
                 '正在分析这个空间的光线与尺度……',
@@ -176,13 +259,12 @@
                 loadingMsg.innerHTML = `<span lang="zh">${messages[i]}</span><span lang="en">${messages[i]}</span>`;
             }
 
-            // Hide loading, show result
             document.getElementById('loadingContainer').style.display = 'none';
             document.getElementById('resultContainer').classList.add('visible');
         }
 
-        // Start loading on page load
-        showLoadingMessages();
+        // 页面加载时开始轮询
+        pollDesignStatus();
 
         // Revise button
         document.getElementById('reviseBtn').addEventListener('click', () => {

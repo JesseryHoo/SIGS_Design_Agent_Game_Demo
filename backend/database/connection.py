@@ -3,6 +3,7 @@
 
 from collections.abc import AsyncGenerator
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from backend.config import settings
@@ -38,7 +39,7 @@ async def init_db() -> None:
     """启动时验证数据库连通性"""
     eng = _get_engine()
     async with eng.begin() as conn:
-        await conn.execute(conn.get_raw_connection().__class__.__module__ + ".text", None)
+        await conn.execute(text("SELECT 1"))
 
 
 async def close_db() -> None:

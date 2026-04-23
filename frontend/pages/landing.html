@@ -221,8 +221,19 @@
 
         // Start explore button - create session
         document.getElementById('startExploreBtn').addEventListener('click', async (e) => {
-            // Session will be created when navigating to explore page
-            console.log('Navigating to explore page');
+            try {
+                // 如果已有 sessionId 就复用，否则创建新的
+                let sessionId = getState('sessionId');
+                if (!sessionId) {
+                    const res = await API.createSession();
+                    sessionId = res.data.session_id;
+                    setState('sessionId', sessionId);
+                }
+                APP_STATE.sessionId = sessionId;
+            } catch (err) {
+                console.error('创建会话失败:', err);
+                // 即使创建失败也允许用户继续浏览
+            }
         });
     </script>
 </body>

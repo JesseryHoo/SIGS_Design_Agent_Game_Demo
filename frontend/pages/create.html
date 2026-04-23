@@ -249,8 +249,8 @@ This place is too monotonous, want more colors"></textarea>
             }, 150);
         });
 
-        // Initialize selected emotions array
-        APP_STATE.selectedEmotions = [];
+        // Initialize selected emotions array — 从 sessionStorage 恢复或新建
+        APP_STATE.selectedEmotions = getState('selectedEmotions') || [];
 
         // Emotion cards
         document.querySelectorAll('.emotion-card').forEach(card => {
@@ -296,9 +296,10 @@ This place is too monotonous, want more colors"></textarea>
         const submitBtn = document.getElementById('submitBtn');
         submitBtn.addEventListener('click', async () => {
             const userInput = document.getElementById('userInput').value.trim();
+            const selectedLocation = getState('selectedLocation');
 
             // Validation
-            if (!APP_STATE.selectedLocation) {
+            if (!selectedLocation) {
                 Toast.show(
                     APP_STATE.language === 'zh' ? '请先选择一个位置' : 'Please select a location first',
                     'warning'
@@ -320,8 +321,36 @@ This place is too monotonous, want more colors"></textarea>
             setState('timePreference', APP_STATE.timePreference);
             setState('activityPreference', APP_STATE.activityPreference);
 
-            // Navigate to generate page
-            window.location.href = 'generate.html';
+            // 调用后端 API 提交创意输入
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.6';
+            try {
+                const sessionId = getState('sessionId');
+                const res = await API.submitDesign({
+                    session_id: sessionId,
+                    location_x: selectedLocation.location_x,
+                    location_y: selectedLocation.location_y,
+                    location_z: selectedLocation.location_z,
+                    location_label: selectedLocation.label,
+                    emotion_tags: APP_STATE.selectedEmotions,
+                    user_input: userInput
+                });
+
+                // 存储 designId 和 AI 响应
+                setState('designId', res.data.id);
+                setState('aiResponse', res.data.ai_response);
+
+                // 跳转到 confirm 页面（不再跳过）
+                window.location.href = 'confirm.html';
+            } catch (err) {
+                console.error('提交失败:', err);
+                Toast.show(
+                    APP_STATE.language === 'zh' ? '提交失败，请重试' : 'Submit failed, please retry',
+                    'error'
+                );
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
         });
     </script>
 </body>

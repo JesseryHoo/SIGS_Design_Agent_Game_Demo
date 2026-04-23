@@ -2,11 +2,13 @@
 # 职责：处理创意输入提交、设计确认、状态查询、列表获取、地图数据等核心设计流程
 
 import uuid
-from sqlalchemy import select, func
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models import Design
 from schemas.design import DesignConfirmRequest, DesignInputRequest, DesignListParams
+
 from .session_service import get_session
 
 
@@ -19,7 +21,7 @@ async def submit_input(db: AsyncSession, request: DesignInputRequest) -> dict:
             "ai_response": None,
             "error": "Session not found"
         }
-    
+
     design = Design(
         user_id=user["id"],
         location_x=request.location_x,
@@ -34,7 +36,7 @@ async def submit_input(db: AsyncSession, request: DesignInputRequest) -> dict:
     db.add(design)
     await db.commit()
     await db.refresh(design)
-    
+
     return {
         "id": str(design.id),
         "ai_response": design.ai_response,
@@ -51,23 +53,23 @@ async def confirm_design(db: AsyncSession, request: DesignConfirmRequest) -> dic
         return {
             "error": "Session not found"
         }
-    
+
     result = await db.execute(
         select(Design).where(Design.id == uuid.UUID(request.design_id))
     )
     design = result.scalar_one_or_none()
-    
+
     if not design or design.user_id != user["id"]:
         return {
             "error": "Design not found or access denied"
         }
-    
+
     design.design_description = request.design_description
     design.generated_image = "生成中..."
     design.model_3d_url = None
     await db.commit()
     await db.refresh(design)
-    
+
     return {
         "id": str(design.id),
         "design_description": design.design_description,
@@ -83,10 +85,10 @@ async def get_design(db: AsyncSession, design_id: str) -> dict | None:
         select(Design).where(Design.id == uuid.UUID(design_id))
     )
     design = result.scalar_one_or_none()
-    
+
     if not design:
         return None
-    
+
     return {
         "id": str(design.id),
         "user_id": str(design.user_id),
@@ -112,14 +114,14 @@ async def get_design_status(db: AsyncSession, design_id: str) -> dict | None:
         select(Design).where(Design.id == uuid.UUID(design_id))
     )
     design = result.scalar_one_or_none()
-    
+
     if not design:
         return None
-    
+
     status = "processing"
     if design.generated_image and design.generated_image != "生成中...":
         status = "completed"
-    
+
     return {
         "id": str(design.id),
         "status": status,
@@ -131,26 +133,30 @@ async def get_design_status(db: AsyncSession, design_id: str) -> dict | None:
 
 async def list_designs(db: AsyncSession, params: DesignListParams) -> dict:
     """获取设计列表，支持分页和排序"""
+    # 先查总数
+    count_result = await db.execute(select(func.count()).select_from(Design))
+    total_count = count_result.scalar() or 0
+
     query = select(Design)
-    
+
     order_column = Design.created_at
     if params.sort_by == "likes_count":
         order_column = Design.likes_count
     else:
         order_column = Design.created_at
-    
+
     if params.order == "desc":
         query = query.order_by(order_column.desc())
     else:
         query = query.order_by(order_column.asc())
-    
+
     offset_val = (params.page - 1) * params.page_size
-    
+
     result = await db.execute(
         query.offset(offset_val).limit(params.page_size)
     )
     designs = result.scalars().all()
-    
+
     return {
         "designs": [
             {
@@ -171,7 +177,7 @@ async def list_designs(db: AsyncSession, params: DesignListParams) -> dict:
         ],
         "page": params.page,
         "page_size": params.page_size,
-        "total_count": len(designs)
+        "total_count": total_count
     }
 
 
@@ -181,7 +187,7 @@ async def get_map_points(db: AsyncSession) -> list[dict]:
         select(Design).where(Design.location_x.isnot(None), Design.location_y.isnot(None))
     )
     designs = result.scalars().all()
-    
+
     return [
         {
             "id": str(d.id),

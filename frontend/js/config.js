@@ -79,10 +79,6 @@ if (typeof window !== 'undefined') {
     window.PAGES = PAGES;
     window.EMOTION_TAGS = EMOTION_TAGS;
     window.APP_STATE = APP_STATE;
-    window.getState = getState;
-    window.setState = setState;
-    window.clearState = clearState;
-    window.navigateTo = navigateTo;
 }
 
 // 导出给其他模块使用

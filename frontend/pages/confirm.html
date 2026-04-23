@@ -164,13 +164,16 @@
         const selectedLocation = getState('selectedLocation');
         const userInput = getState('userInput');
         const selectedEmotions = getState('selectedEmotions') || [];
+        const aiResponse = getState('aiResponse');
 
         if (selectedLocation) {
             document.getElementById('locationDisplay').textContent = selectedLocation.label || '';
         }
 
-        if (userInput) {
-            document.getElementById('inputDisplay').textContent = userInput;
+        // 优先显示 AI 响应，其次显示用户原始输入
+        const displayText = aiResponse || userInput || '';
+        if (displayText) {
+            document.getElementById('inputDisplay').textContent = displayText;
         }
 
         if (selectedEmotions.length > 0) {
@@ -199,9 +202,39 @@
             window.location.href = 'create.html';
         });
 
-        // Confirm button
-        document.getElementById('confirmBtn').addEventListener('click', () => {
-            window.location.href = 'generate.html';
+        // Confirm button — 调用确认 API
+        const confirmBtn = document.getElementById('confirmBtn');
+        confirmBtn.addEventListener('click', async () => {
+            const designId = getState('designId');
+            const sessionId = getState('sessionId');
+
+            if (!designId || !sessionId) {
+                Toast.show(
+                    APP_STATE.language === 'zh' ? '缺少设计数据，请返回重新操作' : 'Missing design data, please go back and retry',
+                    'error'
+                );
+                return;
+            }
+
+            confirmBtn.disabled = true;
+            confirmBtn.style.opacity = '0.6';
+            try {
+                await API.confirmDesign(designId, {
+                    session_id: sessionId,
+                    design_id: designId,
+                    design_description: displayText
+                });
+
+                window.location.href = 'generate.html';
+            } catch (err) {
+                console.error('确认失败:', err);
+                Toast.show(
+                    APP_STATE.language === 'zh' ? '确认失败，请重试' : 'Confirm failed, please retry',
+                    'error'
+                );
+                confirmBtn.disabled = false;
+                confirmBtn.style.opacity = '1';
+            }
         });
     </script>
 </body>

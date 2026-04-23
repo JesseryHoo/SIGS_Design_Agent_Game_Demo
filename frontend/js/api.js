@@ -62,9 +62,10 @@ const API = {
         });
     },
 
-    async confirmDesign(designId) {
+    async confirmDesign(designId, data) {
         return this.request(`${API_CONFIG.endpoints.designs}/${designId}/confirm`, {
-            method: 'POST'
+            method: 'POST',
+            body: JSON.stringify(data)
         });
     },
 

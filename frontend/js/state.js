@@ -66,6 +66,9 @@ function setMultipleState(stateObj) {
 // 导出给 HTML 页面使用
 if (typeof window !== 'undefined') {
     window.STATE_KEYS = STATE_KEYS;
+    window.setState = setState;
+    window.getState = getState;
+    window.clearState = clearState;
     window.getAllState = getAllState;
     window.setMultipleState = setMultipleState;
 }
