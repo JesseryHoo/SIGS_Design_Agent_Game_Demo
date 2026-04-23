@@ -20,6 +20,7 @@ from backend.utils.logger import get_logger
 logger = get_logger(__name__)
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+ENGINE_DIR = Path(__file__).resolve().parent.parent / "engine"
 
 
 @asynccontextmanager
@@ -65,6 +66,9 @@ async def health():
 async def root():
     return RedirectResponse(url="/pages/landing.html")
 
+
+if ENGINE_DIR.exists():
+    app.mount("/engine", StaticFiles(directory=ENGINE_DIR, html=False), name="engine")
 
 if FRONTEND_DIR.exists():
     app.mount("", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

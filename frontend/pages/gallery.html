@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="../css/layout.css">
     <link rel="stylesheet" href="../css/components.css">
     <link rel="stylesheet" href="../css/loading.css">
+    <link rel="stylesheet" href="/engine/engine.css">
 </head>
 <body>
     <!-- Toast Container -->
@@ -90,32 +91,7 @@
 
         <div class="gallery-map-wrapper">
             <div class="gallery-map">
-                <div class="map-canvas" id="galleryMapCanvas">
-                    <!-- Zones -->
-                    <div class="map-zone" style="width: 140px; height: 90px; top: 8%; left: 8%;">
-                        <span class="map-zone-label"><span lang="zh">图书馆</span><span lang="en">Library</span></span>
-                    </div>
-                    <div class="map-zone" style="width: 110px; height: 110px; top: 48%; left: 4%;">
-                        <span class="map-zone-label"><span lang="zh">信息楼</span><span lang="en">Info</span></span>
-                    </div>
-                    <div class="map-zone" style="width: 100px; height: 100px; top: 52%; left: 24%;">
-                        <span class="map-zone-label"><span lang="zh">能源楼</span><span lang="en">Energy</span></span>
-                    </div>
-                    <div class="map-zone" style="width: 150px; height: 80px; top: 12%; left: 44%;">
-                        <span class="map-zone-label"><span lang="zh">国际中心</span><span lang="en">Intl Ctr</span></span>
-                    </div>
-                    <div class="map-zone" style="width: 90px; height: 130px; top: 33%; left: 64%;">
-                        <span class="map-zone-label"><span lang="zh">宿舍</span><span lang="en">Dorm</span></span>
-                    </div>
-                    <div class="map-zone" style="width: 120px; height: 70px; top: 68%; left: 48%;">
-                        <span class="map-zone-label"><span lang="zh">体育馆</span><span lang="en">Gym</span></span>
-                    </div>
-                    <div class="map-zone" style="width: 80px; height: 60px; top: 18%; left: 78%;">
-                        <span class="map-zone-label"><span lang="zh">食堂</span><span lang="en">Cafeteria</span></span>
-                    </div>
-
-                    <!-- Idea markers will be populated by API -->
-                </div>
+                <div class="campus-engine-container" id="galleryCampusContainer"></div>
             </div>
         </div>
     </section>
@@ -148,7 +124,151 @@
     <script src="../js/state.js"></script>
     <script src="../js/utils.js"></script>
     <script src="../js/router.js"></script>
-    <script>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module">
+        import { CampusEngine } from '/engine/index.js';
+
+        // Language Switcher
+        const langSwitcher = document.getElementById('langSwitcher');
+
+        function updateLanguageDisplay() {
+            if (APP_STATE.language === 'en') {
+                document.body.classList.add('lang-en');
+            } else {
+                document.body.classList.remove('lang-en');
+            }
+
+            const zhSpan = langSwitcher.querySelector('[lang="zh"]');
+            const enSpan = langSwitcher.querySelector('[lang="en"]');
+
+            if (APP_STATE.language === 'zh') {
+                zhSpan.classList.add('lang-active');
+                enSpan.classList.remove('lang-active');
+            } else {
+                enSpan.classList.add('lang-active');
+                zhSpan.classList.remove('lang-active');
+            }
+        }
+
+        updateLanguageDisplay();
+
+        langSwitcher.addEventListener('click', (e) => {
+            const clickedSpan = e.target.closest('[lang]');
+            if (clickedSpan) {
+                const clickedLang = clickedSpan.getAttribute('lang');
+                if (clickedLang === APP_STATE.language) return;
+            }
+
+            APP_STATE.language = APP_STATE.language === 'zh' ? 'en' : 'zh';
+            localStorage.setItem('lang', APP_STATE.language);
+            updateLanguageDisplay();
+        });
+
+        // 初始化 3D Gallery 引擎
+        const galleryContainer = document.getElementById('galleryCampusContainer');
+        const galleryEngine = new CampusEngine({
+            container: galleryContainer,
+            mode: 'gallery',
+            cameraMode: 'orbit',
+            showBuildings: true,
+            showMarkers: false,
+            language: APP_STATE.language,
+        });
+
+        galleryEngine.on('marker-clicked', (data) => {
+            openDesignModal(data.id);
+        });
+
+        galleryEngine.start();
+
+        // 加载社区数据
+        async function renderGalleryData() {
+            try {
+                const [mapRes, statsRes] = await Promise.allSettled([
+                    API.getMapData(),
+                    API.getStats(),
+                ]);
+
+                if (statsRes.status === 'fulfilled' && statsRes.value.data) {
+                    const stats = statsRes.value.data;
+                    const visitorEl = document.getElementById('visitorCount');
+                    const areaEl = document.getElementById('areaCount');
+                    if (visitorEl) visitorEl.textContent = stats.total_visitors || 0;
+                    if (areaEl) areaEl.textContent = stats.total_areas || 0;
+                }
+
+                if (mapRes.status === 'fulfilled' && mapRes.value.data && mapRes.value.data.length > 0) {
+                    const designs = mapRes.value.data.map(d => ({
+                        id: d.id,
+                        location_x: d.location_x,
+                        location_y: d.location_y,
+                        likesCount: d.likes_count,
+                        label: d.location_label,
+                    }));
+                    galleryEngine.addDesignMarkers(designs);
+                }
+            } catch (err) {
+                console.error('获取社区数据失败:', err);
+            }
+        }
+
+        renderGalleryData();
+
+        // 点击光点时从 API 获取设计详情
+        async function openDesignModal(designId) {
+            const overlay = document.getElementById('modalOverlay');
+            const inputText = document.getElementById('modalInputText');
+            const resultText = document.getElementById('modalResultText');
+            const modalImage = document.getElementById('modalImage');
+
+            inputText.textContent = APP_STATE.language === 'zh' ? '加载中...' : 'Loading...';
+            resultText.textContent = APP_STATE.language === 'zh' ? '加载中...' : 'Loading...';
+            modalImage.style.display = 'none';
+            overlay.classList.add('visible');
+
+            try {
+                const detailRes = await fetch(`${API_BASE_URL}/designs/${designId}`);
+                const detailData = await detailRes.json();
+
+                if (detailData.code === 0 && detailData.data) {
+                    const d = detailData.data;
+                    inputText.textContent = d.user_input || d.location_label || '-';
+                    resultText.textContent = d.ai_response || d.design_description || '-';
+
+                    if (d.generated_image && d.generated_image !== '生成中...') {
+                        modalImage.src = d.generated_image;
+                        modalImage.style.display = 'block';
+                    }
+                }
+            } catch (err) {
+                console.error('获取设计详情失败:', err);
+                inputText.textContent = APP_STATE.language === 'zh' ? '加载失败' : 'Failed to load';
+                resultText.textContent = '';
+            }
+        }
+
+        // Modal controls
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalClose = document.getElementById('modalClose');
+
+        modalClose.addEventListener('click', () => {
+            modalOverlay.classList.remove('visible');
+        });
+
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                modalOverlay.classList.remove('visible');
+            }
+        });
+    </script>
         // Language Switcher
         const langSwitcher = document.getElementById('langSwitcher');
 

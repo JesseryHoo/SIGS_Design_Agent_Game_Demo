@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="../css/layout.css">
     <link rel="stylesheet" href="../css/components.css">
     <link rel="stylesheet" href="../css/loading.css">
+    <link rel="stylesheet" href="/engine/engine.css">
 </head>
 <body>
     <!-- Toast Container -->
@@ -76,56 +77,7 @@
 
         <div class="campus-map-container">
             <div class="campus-map">
-                <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3686.8958!2d114.0633!3d22.5947!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x340406f3c8f9f9f9%3A0x6a6b6b6b6b6b6b6b!2sTsinghua%20Shenzhen%20International%20Graduate%20School!5e0!3m2!1szh-CN!2scn!4v1700000000"
-                    width="100%"
-                    height="100%"
-                    style="border: 0; filter: grayscale(70%) contrast(1.05) saturate(0.8);"
-                    allowfullscreen=""
-                    loading="lazy"
-                    referrerpolicy="no-referrer-when-downgrade">
-                </iframe>
-
-                <!-- Overlay Markers -->
-                <div class="map-overlay">
-                    <div class="location-marker premium" style="top: 25%; left: 20%;" data-mood="hot" data-location="library" data-label="图书馆前庭">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <circle cx="10" cy="10" r="8"/>
-                            <path d="M10 6V14M6 10H14" stroke-linecap="round"/>
-                        </svg>
-                        <span class="marker-tooltip"><span lang="zh">午后最热的角落</span><span lang="en">Hottest Corner in Afternoon</span></span>
-                    </div>
-                    <div class="location-marker premium" style="top: 55%; left: 15%;" data-mood="wet" data-location="pathway" data-label="雨中路径">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M10 3C10 3 5 8 5 12C5 15.87 7.13 18 10 18C12.87 18 15 15.87 15 12C15 8 10 3 10 3Z" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M10 15C10 15 8 13 8 11.5C8 10.4 8.9 9.5 10 9.5C11.1 9.5 12 10.4 12 11.5C12 13 10 15 10 15Z" stroke-linecap="round"/>
-                        </svg>
-                        <span class="marker-tooltip"><span lang="zh">下雨天没有遮挡的路</span><span lang="en">Unsheltered Path on Rainy Days</span></span>
-                    </div>
-                    <div class="location-marker premium" style="top: 40%; left: 55%;" data-mood="quiet" data-location="courtyard" data-label="静谧庭院">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <circle cx="10" cy="10" r="8"/>
-                            <path d="M7 10H13M10 7V13" stroke-linecap="round"/>
-                        </svg>
-                        <span class="marker-tooltip"><span lang="zh">没人去的好地方</span><span lang="en">Hidden Gem Quiet Spot</span></span>
-                    </div>
-                    <div class="location-marker premium" style="top: 70%; left: 60%;" data-mood="noisy" data-location="plaza" data-label="中央广场">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M5 10H15M3 10C3 10 5 6 10 6C15 6 17 10 17 10" stroke-linecap="round"/>
-                            <path d="M5 10C5 10 7 14 10 14C13 14 15 10 15 10" stroke-linecap="round"/>
-                            <circle cx="10" cy="10" r="1" fill="currentColor"/>
-                        </svg>
-                        <span class="marker-tooltip"><span lang="zh">太吵了</span><span lang="en">Too Noisy</span></span>
-                    </div>
-                    <div class="location-marker premium" style="top: 30%; left: 80%;" data-mood="bare" data-location="green" data-label="绿地">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M10 3C10 3 4 8 4 12C4 16.42 7.58 20 10 20C12.42 20 16 16.42 16 12C16 8 10 3 10 3Z" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M10 7V17" stroke-linecap="round"/>
-                            <path d="M7 10H13" stroke-linecap="round"/>
-                        </svg>
-                        <span class="marker-tooltip"><span lang="zh">想要绿色</span><span lang="en">Want More Greenery</span></span>
-                    </div>
-                </div>
+                <div class="campus-engine-container" id="campusContainer"></div>
             </div>
 
             <div class="explore-modes">
@@ -154,7 +106,19 @@
     <script src="../js/state.js"></script>
     <script src="../js/utils.js"></script>
     <script src="../js/router.js"></script>
-    <script>
+
+    <!-- Three.js via CDN Import Map -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module">
+        import { CampusEngine } from '/engine/index.js';
+
         // Language Switcher
         const langSwitcher = document.getElementById('langSwitcher');
 
@@ -190,53 +154,63 @@
             localStorage.setItem('lang', APP_STATE.language);
             updateLanguageDisplay();
 
-            document.body.style.opacity = '0.8';
-            setTimeout(() => {
-                document.body.style.opacity = '1';
-            }, 150);
+            if (window.campusEngine) {
+                window.campusEngine.setLanguage(APP_STATE.language);
+            }
         });
 
-        // Mode toggle
+        // 初始化 3D 引擎
+        const container = document.getElementById('campusContainer');
+        const engine = new CampusEngine({
+            container: container,
+            mode: 'explore',
+            cameraMode: 'orbit',
+            showBuildings: true,
+            showMarkers: true,
+            language: APP_STATE.language,
+        });
+        window.campusEngine = engine;
+
+        engine.on('location-selected', async (data) => {
+            const screenshot = await engine.captureScreenshot();
+
+            const locationData = {
+                location: data.buildingId,
+                label: data.label,
+                mood: data.mood,
+                location_x: data.screenPercent.left,
+                location_y: data.screenPercent.top,
+                location_z: data.worldPosition.y || 0,
+            };
+
+            APP_STATE.selectedLocation = locationData;
+            setState('selectedLocation', locationData);
+            setState('originalScreenshot', screenshot);
+
+            Toast.show(
+                APP_STATE.language === 'zh'
+                    ? `已选择: ${data.label}`
+                    : `Selected: ${data.label}`,
+                'info'
+            );
+        });
+
+        engine.start();
+
+        // Mode toggle — 切换相机模式
         document.querySelectorAll('.mode-card').forEach(card => {
             card.addEventListener('click', () => {
                 document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
                 card.classList.add('active');
-            });
-        });
 
-        // Location markers
-        document.querySelectorAll('.location-marker').forEach(marker => {
-            marker.addEventListener('click', () => {
-                const location = marker.dataset.location;
-                const label = marker.dataset.label;
-                const mood = marker.dataset.mood;
-
-                // 从 CSS 定位百分比转换为模拟坐标（后续可替换为真实地理坐标）
-                const top = parseFloat(marker.style.top);
-                const left = parseFloat(marker.style.left);
-
-                const locationData = {
-                    location,
-                    label,
-                    mood,
-                    location_x: left,
-                    location_y: top,
-                    location_z: 0
-                };
-
-                APP_STATE.selectedLocation = locationData;
-                setState('selectedLocation', locationData);
-
-                // Highlight selected marker
-                document.querySelectorAll('.location-marker').forEach(m => m.classList.remove('selected'));
-                marker.classList.add('selected');
-
-                Toast.show(
-                    APP_STATE.language === 'zh'
-                        ? `已选择: ${label}`
-                        : `Selected: ${label}`,
-                    'info'
-                );
+                const mode = card.dataset.mode;
+                if (mode === 'roam') {
+                    engine.setCameraMode('roam');
+                } else if (mode === 'free') {
+                    engine.setCameraMode('free');
+                } else {
+                    engine.setCameraMode('orbit');
+                }
             });
         });
 
