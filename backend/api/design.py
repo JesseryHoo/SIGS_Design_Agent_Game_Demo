@@ -32,26 +32,6 @@ async def confirm_design(
     return api_success(data=result)
 
 
-@design_router.get("/designs/{design_id}")
-async def get_design(
-    design_id: str,
-    db: AsyncSession = Depends(get_db),
-):
-    """获取设计详情"""
-    result = await design_service.get_design(db, design_id)
-    return api_success(data=result)
-
-
-@design_router.get("/designs/{design_id}/status")
-async def get_design_status(
-    design_id: str,
-    db: AsyncSession = Depends(get_db),
-):
-    """查询生成状态（轮询）"""
-    result = await design_service.get_design_status(db, design_id)
-    return api_success(data=result)
-
-
 @design_router.get("/designs")
 async def list_designs(
     page: int = Query(1, ge=1),
@@ -72,6 +52,26 @@ async def get_map_points(
 ):
     """获取地图光点数据"""
     result = await design_service.get_map_points(db)
+    return api_success(data=result)
+
+
+@design_router.get("/designs/{design_id}")
+async def get_design(
+    design_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """获取设计详情"""
+    result = await design_service.get_design(db, design_id)
+    return api_success(data=result)
+
+
+@design_router.get("/designs/{design_id}/status")
+async def get_design_status(
+    design_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """查询生成状态（轮询）"""
+    result = await design_service.get_design_status(db, design_id)
     return api_success(data=result)
 
 
