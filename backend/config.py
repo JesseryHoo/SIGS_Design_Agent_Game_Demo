@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     API_KEY: str = ""
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8989
-    FRONTEND_URL: str = "http://localhost:8989"
+    FRONTEND_URL: str = "http://localhost:3000"
     LLM_API_KEY: str = ""
     LLM_API_URL: str = ""
     LLM_MODEL: str = "gpt-4"
