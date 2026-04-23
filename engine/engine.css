@@ -1,16 +1,13 @@
 .campus-engine-container {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 10;
+    height: 100%;
     overflow: hidden;
-    border-radius: 12px;
     background: #87ceeb;
 }
 
 .campus-engine-container canvas {
     display: block;
-    width: 100% !important;
-    height: 100% !important;
 }
 
 .engine-tooltip {

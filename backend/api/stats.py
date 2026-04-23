@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from schemas.common import api_success
+from backend.schemas.common import api_success
 
 from .deps import get_db
 

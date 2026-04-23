@@ -81,7 +81,7 @@
             </div>
 
             <div class="explore-modes">
-                <div class="mode-card active" data-mode="roam">
+                <div class="mode-card active" data-mode="orbit">
                     <svg class="mode-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
                         <circle cx="10" cy="10" r="7"/>
                         <path d="M10 6V10L13 13" stroke-linecap="round" stroke-linejoin="round"/>
@@ -117,9 +117,7 @@
     }
     </script>
     <script type="module">
-        import { CampusEngine } from '/engine/index.js';
-
-        // Language Switcher
+        // Language Switcher (需要在引擎加载前初始化)
         const langSwitcher = document.getElementById('langSwitcher');
 
         function updateLanguageDisplay() {
@@ -159,61 +157,6 @@
             }
         });
 
-        // 初始化 3D 引擎
-        const container = document.getElementById('campusContainer');
-        const engine = new CampusEngine({
-            container: container,
-            mode: 'explore',
-            cameraMode: 'orbit',
-            showBuildings: true,
-            showMarkers: true,
-            language: APP_STATE.language,
-        });
-        window.campusEngine = engine;
-
-        engine.on('location-selected', async (data) => {
-            const screenshot = await engine.captureScreenshot();
-
-            const locationData = {
-                location: data.buildingId,
-                label: data.label,
-                mood: data.mood,
-                location_x: data.screenPercent.left,
-                location_y: data.screenPercent.top,
-                location_z: data.worldPosition.y || 0,
-            };
-
-            APP_STATE.selectedLocation = locationData;
-            setState('selectedLocation', locationData);
-            setState('originalScreenshot', screenshot);
-
-            Toast.show(
-                APP_STATE.language === 'zh'
-                    ? `已选择: ${data.label}`
-                    : `Selected: ${data.label}`,
-                'info'
-            );
-        });
-
-        engine.start();
-
-        // Mode toggle — 切换相机模式
-        document.querySelectorAll('.mode-card').forEach(card => {
-            card.addEventListener('click', () => {
-                document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
-                card.classList.add('active');
-
-                const mode = card.dataset.mode;
-                if (mode === 'roam') {
-                    engine.setCameraMode('roam');
-                } else if (mode === 'free') {
-                    engine.setCameraMode('free');
-                } else {
-                    engine.setCameraMode('orbit');
-                }
-            });
-        });
-
         // 确保页面加载时有 session
         (async () => {
             let sessionId = getState('sessionId');
@@ -230,6 +173,65 @@
                 APP_STATE.sessionId = sessionId;
             }
         })();
+
+        // 尝试初始化 3D 引擎
+        try {
+            const { CampusEngine } = await import('/engine/index.js');
+
+            const container = document.getElementById('campusContainer');
+            if (!container) throw new Error('campusContainer not found');
+
+            const engine = new CampusEngine({
+                container: container,
+                mode: 'explore',
+                cameraMode: 'orbit',
+                showBuildings: true,
+                showMarkers: true,
+                language: APP_STATE.language,
+            });
+            window.campusEngine = engine;
+
+            engine.on('location-selected', async (data) => {
+                const screenshot = await engine.captureScreenshot();
+
+                const locationData = {
+                    location: data.buildingId,
+                    label: data.label,
+                    mood: data.mood,
+                    location_x: data.screenPercent.left,
+                    location_y: data.screenPercent.top,
+                    location_z: data.worldPosition.y || 0,
+                };
+
+                APP_STATE.selectedLocation = locationData;
+                setState('selectedLocation', locationData);
+                setState('originalScreenshot', screenshot);
+
+                Toast.show(
+                    APP_STATE.language === 'zh'
+                        ? `已选择: ${data.label}`
+                        : `Selected: ${data.label}`,
+                    'info'
+                );
+            });
+
+            engine.start();
+            console.log('[Engine] 3D 校园引擎启动成功');
+
+            // Mode toggle — 切换相机模式
+            document.querySelectorAll('.mode-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+
+                    const mode = card.dataset.mode;
+                    engine.setCameraMode(mode);
+                });
+            });
+        } catch (err) {
+            console.error('[Engine] 3D 引擎加载失败，使用回退模式:', err);
+            Toast.show('3D 引擎加载失败，请刷新页面重试', 'error');
+        }
     </script>
 </body>
 </html>

@@ -6,7 +6,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import User
+from backend.database.models import User
 
 
 async def create_session(db: AsyncSession) -> dict:

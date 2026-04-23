@@ -6,8 +6,8 @@ import uuid
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import Design
-from schemas.design import DesignConfirmRequest, DesignInputRequest, DesignListParams
+from backend.database.models import Design
+from backend.schemas.design import DesignConfirmRequest, DesignInputRequest, DesignListParams
 
 from .session_service import get_session
 

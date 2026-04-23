@@ -26,6 +26,13 @@ export class CameraController {
         this._initOrbit();
         this._initRoam();
         this._initFree();
+
+        // OrbitControls.update() 需要在每帧调用（启用 damping 时）
+        this._registerFrame(() => {
+            if (this._orbitControls && this._orbitControls.enabled) {
+                this._orbitControls.update();
+            }
+        });
     }
 
     setMode(mode) {

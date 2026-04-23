@@ -1,8 +1,14 @@
 # main.py — FastAPI 应用入口
 # 职责：创建应用实例、注册中间件、挂载路由、提供前端静态文件服务
 
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
+
+# 确保项目根目录在 sys.path 中，使 `from backend.xxx` 导入正常工作
+_PROJECT_ROOT = str(Path(__file__).resolve().parent.parent)
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

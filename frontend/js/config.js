@@ -2,8 +2,9 @@
 // 职责：定义 API 地址、页面路径常量、情绪标签配置、状态管理
 
 // API 配置
+// 开发环境：后端运行在 8989 端口
 const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8000/api/v1'
+    ? `http://localhost:8989/api/v1`
     : `${window.location.origin}/api/v1`;
 
 const API_KEY = localStorage.getItem('api_key') || '';

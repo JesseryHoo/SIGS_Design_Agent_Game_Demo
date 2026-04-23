@@ -6,7 +6,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import Design, Like
+from backend.database.models import Design, Like
 
 
 async def like_design(db: AsyncSession, user_id: str, design_id: str) -> dict:
